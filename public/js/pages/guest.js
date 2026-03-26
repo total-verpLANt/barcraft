@@ -33,8 +33,13 @@
     } catch { return null; }
   }
 
-  function saveActiveOrder(orderId, drinkName) {
-    localStorage.setItem(ORDER_KEY, JSON.stringify({ orderId, drinkName }));
+  function saveActiveOrder(orderId, drinkName, status = 'pending', barComment = null) {
+    localStorage.setItem(ORDER_KEY, JSON.stringify({ orderId, drinkName, status, barComment }));
+  }
+
+  function updateSavedOrderStatus(status, barComment = null) {
+    const saved = loadActiveOrder();
+    if (saved) saveActiveOrder(saved.orderId, saved.drinkName, status, barComment);
   }
 
   function clearActiveOrder() {
@@ -465,6 +470,7 @@
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'accepted';
     currentOrderBarComment = barComment || null;
+    updateSavedOrderStatus('accepted', currentOrderBarComment);
     updateWidget('accepted', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
@@ -473,6 +479,7 @@
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'rejected';
     currentOrderBarComment = barComment || null;
+    updateSavedOrderStatus('rejected', currentOrderBarComment);
     updateWidget('rejected', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
   });
@@ -481,6 +488,7 @@
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'completed';
     currentOrderBarComment = null;
+    updateSavedOrderStatus('completed');
     updateWidget('completed', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('completed');
   });
@@ -492,41 +500,22 @@
     }
   });
 
-  // Init
-  async function restoreActiveOrder() {
+  function restoreActiveOrder() {
     const saved = loadActiveOrder();
     if (!saved) return;
-    try {
-      const res = await fetch(`/api/orders/${saved.orderId}`);
-      if (!res.ok) { clearActiveOrder(); return; }
-      const { order } = await res.json();
-      if (!order || order.status === 'completed' || order.status === 'rejected') {
-        // Terminal state – keep widget visible so user sees the result, but don't auto-clear
-        if (order) {
-          currentOrderId = order.id;
-          currentOrderDrinkName = saved.drinkName;
-          currentOrderStatus = order.status;
-          updateWidget(order.status, saved.drinkName);
-        } else {
-          clearActiveOrder();
-        }
-        return;
-      }
-      currentOrderId = order.id;
-      currentOrderDrinkName = saved.drinkName;
-      currentOrderStatus = order.status;
-      currentOrderBarComment = order.barComment || null;
-      updateWidget(order.status, saved.drinkName);
-    } catch {
-      clearActiveOrder();
-    }
+    currentOrderId = saved.orderId;
+    currentOrderDrinkName = saved.drinkName;
+    currentOrderStatus = saved.status || 'pending';
+    currentOrderBarComment = saved.barComment || null;
+    updateWidget(currentOrderStatus, currentOrderDrinkName);
   }
 
   const savedUser = loadUser();
   if (savedUser) {
     currentUser = savedUser;
     socket.emit('client:guest_join', { userId: savedUser.id });
-    await Promise.all([initOrderForm(), restoreActiveOrder()]);
+    await initOrderForm();
+    restoreActiveOrder();
   } else {
     initUserSelect();
   }
