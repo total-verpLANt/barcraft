@@ -10,6 +10,49 @@
   // Join bar room
   socket.emit('client:bar_join');
 
+  // === Drinks management ===
+  async function loadDrinks() {
+    try {
+      const res = await fetch('/api/drinks');
+      const { drinks } = await res.json();
+      renderDrinks(drinks || []);
+    } catch (err) { console.error(err); }
+  }
+
+  function renderDrinks(drinks) {
+    const list = document.getElementById('drinks-list');
+    const noMsg = document.getElementById('no-drinks-msg');
+    if (drinks.length === 0) {
+      list.innerHTML = '';
+      noMsg.classList.remove('hidden');
+      return;
+    }
+    noMsg.classList.add('hidden');
+    list.innerHTML = drinks.map(d => `
+      <div style="display:flex;align-items:center;gap:.375rem;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:.375rem .625rem;">
+        <span style="font-size:.875rem;font-weight:500;">${escapeHtml(d.name)}</span>
+        <button class="btn btn-icon btn-ghost btn-sm" data-delete-drink="${escapeHtml(d.id)}" title="Löschen"
+          style="padding:.15rem .4rem;font-size:.85rem;color:var(--color-danger);min-width:auto;min-height:auto;">✕</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-delete-drink]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Drink "${btn.closest('div').querySelector('span').textContent}" löschen?`)) return;
+        await fetch(`/api/drinks/${btn.dataset.deleteDrink}`, { method: 'DELETE' });
+        await loadDrinks();
+      });
+    });
+  }
+
+  document.getElementById('drinks-toggle').addEventListener('click', () => {
+    const body = document.getElementById('drinks-body');
+    const arrow = document.getElementById('drinks-arrow');
+    const isHidden = body.classList.contains('hidden');
+    body.classList.toggle('hidden', !isHidden);
+    arrow.textContent = isHidden ? '▲' : '▼';
+    if (isHidden) loadDrinks();
+  });
+
   // === Fetch all orders on load ===
   async function loadOrders() {
     try {

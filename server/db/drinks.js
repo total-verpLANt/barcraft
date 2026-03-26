@@ -51,4 +51,14 @@ async function incrementDrinkOrderCount(drinkId) {
   }
 }
 
-module.exports = { getDrinks, getDrinkById, createDrink, updateDrink, incrementDrinkOrderCount };
+async function deleteDrink(id) {
+  const data = await readJson(FILE);
+  if (!data) return false;
+  const idx = data.drinks.findIndex(d => d.id === id);
+  if (idx === -1) return false;
+  data.drinks.splice(idx, 1);
+  await writeJson(FILE, data);
+  return true;
+}
+
+module.exports = { getDrinks, getDrinkById, createDrink, updateDrink, incrementDrinkOrderCount, deleteDrink };

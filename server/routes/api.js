@@ -5,9 +5,8 @@ const router = express.Router();
 const config = require('../../config.json');
 
 const { getUsers, getUserById, createUser } = require('../db/users');
-const { getDrinks, createDrink, updateDrink } = require('../db/drinks');
+const { getDrinks, createDrink, updateDrink, deleteDrink, incrementDrinkOrderCount } = require('../db/drinks');
 const { getOrders, getOrderById, createOrder, updateOrder } = require('../db/orders');
-const { incrementDrinkOrderCount } = require('../db/drinks');
 const { incrementUserOrderCount } = require('../db/users');
 const { getStats } = require('../db/stats');
 const { readJson, writeJson } = require('../db/fileDb');
@@ -95,6 +94,16 @@ router.patch('/drinks/:id', async (req, res) => {
     const drink = await updateDrink(req.params.id, req.body);
     if (!drink) return res.status(404).json({ error: 'Drink not found' });
     res.json({ drink });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/drinks/:id', async (req, res) => {
+  try {
+    const ok = await deleteDrink(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Drink not found' });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

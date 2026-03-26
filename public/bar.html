@@ -63,6 +63,18 @@
     </div>
   </div>
 
+  <!-- Drinks Management -->
+  <div class="bar-controls" id="drinks-panel">
+    <div class="bar-controls-header" id="drinks-toggle">
+      <span style="font-weight:700;">🍹 Getränkeliste</span>
+      <span id="drinks-arrow">▼</span>
+    </div>
+    <div class="bar-controls-body hidden" id="drinks-body" style="flex-direction:column;gap:.75rem;">
+      <div id="drinks-list" style="display:flex;flex-wrap:wrap;gap:.5rem;"></div>
+      <p id="no-drinks-msg" class="text-muted hidden">Noch keine Getränke. Gäste können über "Add Drink" neue hinzufügen.</p>
+    </div>
+  </div>
+
   <!-- Standby -->
   <div id="bar-standby" class="hidden status-card">
     <div class="status-icon">🟢</div>
