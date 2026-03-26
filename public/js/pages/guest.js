@@ -301,6 +301,7 @@
       if (res.ok) {
         const { order } = await res.json();
         currentOrderId = order.id;
+        currentOrderDrinkName = selectedDrink.name;
         showWaiting('pending');
       } else {
         const err = await res.json();
@@ -323,11 +324,43 @@
 
   document.getElementById('btn-order-again').addEventListener('click', () => {
     currentOrderId = null;
+    currentOrderStatus = null;
+    currentOrderDrinkName = null;
+    updateWidget(null);
     initOrderForm();
+  });
+
+  // === Order status widget ===
+  let currentOrderStatus = null;
+  let currentOrderDrinkName = null;
+
+  const WIDGET_CONFIG = {
+    pending:   { icon: '⏳', label: 'In der Warteschlange', cls: '' },
+    accepted:  { icon: '🍹', label: 'Wird zubereitet…',    cls: 'status-accepted' },
+    rejected:  { icon: '❌', label: 'Abgelehnt',           cls: 'status-rejected' },
+    completed: { icon: '🎉', label: 'Abholbereit!',        cls: 'status-completed' },
+  };
+
+  function updateWidget(status, drinkName) {
+    const widget = document.getElementById('order-status-widget');
+    if (!status) { widget.classList.add('hidden'); return; }
+    const cfg = WIDGET_CONFIG[status];
+    document.getElementById('widget-icon').textContent = cfg.icon;
+    document.getElementById('widget-drink').textContent = drinkName || '';
+    document.getElementById('widget-status').textContent = cfg.label;
+    widget.className = cfg.cls;  // clears old status classes
+    widget.classList.remove('hidden');
+    triggerFlash(widget, status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : status === 'completed' ? 'completed' : 'amber');
+  }
+
+  document.getElementById('order-status-widget').addEventListener('click', () => {
+    if (currentOrderStatus) showWaiting(currentOrderStatus);
   });
 
   // === Waiting View ===
   function showWaiting(type, barComment) {
+    currentOrderStatus = type;
+    updateWidget(type, currentOrderDrinkName);
     showView('waiting');
     const card = document.getElementById('waiting-status-card');
     const icon = document.getElementById('status-icon');
@@ -410,15 +443,24 @@
 
   // === Socket events ===
   socket.on('guest:order_accepted', ({ orderId, barComment }) => {
-    if (orderId === currentOrderId) showWaiting('accepted', barComment);
+    if (orderId !== currentOrderId) return;
+    currentOrderStatus = 'accepted';
+    updateWidget('accepted', currentOrderDrinkName);
+    if (!views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
   socket.on('guest:order_rejected', ({ orderId, barComment }) => {
-    if (orderId === currentOrderId) showWaiting('rejected', barComment);
+    if (orderId !== currentOrderId) return;
+    currentOrderStatus = 'rejected';
+    updateWidget('rejected', currentOrderDrinkName);
+    if (!views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
   });
 
   socket.on('guest:order_completed', ({ orderId }) => {
-    if (orderId === currentOrderId) showWaiting('completed');
+    if (orderId !== currentOrderId) return;
+    currentOrderStatus = 'completed';
+    updateWidget('completed', currentOrderDrinkName);
+    if (!views.waiting.classList.contains('hidden')) showWaiting('completed');
   });
 
   socket.on('global:bar_state_changed', (state) => {

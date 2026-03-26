@@ -547,6 +547,54 @@
 .mode-card:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); transform: translateY(-2px); text-decoration: none; }
 .mode-card .mode-icon { font-size: 2.5rem; }
 
+/* === Floating order status widget === */
+#order-status-widget {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius);
+  padding: .625rem .875rem;
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 500;
+  max-width: 220px;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+#order-status-widget:hover { transform: translateY(-2px); box-shadow: 0 12px 20px rgba(0,0,0,.5); }
+
+#order-status-widget .widget-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+#order-status-widget .widget-text {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+}
+
+#order-status-widget #widget-drink {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#order-status-widget #widget-status {
+  font-size: .75rem;
+  color: var(--color-text-muted);
+}
+
+#order-status-widget.status-accepted  { border-color: #3b82f6; }
+#order-status-widget.status-rejected  { border-color: var(--color-danger); }
+#order-status-widget.status-completed { border-color: var(--color-success); }
+
 /* === User list === */
 .user-list {
   display: flex;
