@@ -1,8 +1,8 @@
 /* Flash animations for order state changes */
 @keyframes flashAccepted {
   0%   { background: var(--color-surface); }
-  20%  { background: #dbeafe; }
-  60%  { background: #dbeafe; }
+  20%  { background: #0f1f3d; }
+  60%  { background: #0f1f3d; }
   100% { background: var(--color-surface); }
 }
 
