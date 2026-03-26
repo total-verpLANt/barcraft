@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order – Barcraft</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+<!-- Password overlay -->
+<div id="password-overlay" class="hidden">
+  <div class="auth-card">
+    <h1>🍺 Barcraft</h1>
+    <p>Enter the bar password to continue</p>
+    <form id="password-form">
+      <div class="form-group">
+        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Enter</button>
+      <p id="auth-error" class="auth-error"></p>
+    </form>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <span class="page-title">🍺 <span class="accent">Barcraft</span></span>
+    <a href="/" class="btn btn-ghost btn-sm">← Back</a>
+  </div>
+</div>
+
+<div class="container" style="padding-bottom:2rem;">
+
+  <!-- View 1: User Select -->
+  <div id="view-user-select">
+    <h2 class="mb-2">Who are you?</h2>
+
+    <div class="form-group">
+      <label class="label" for="new-user-name">New player?</label>
+      <div class="flex gap-1">
+        <input class="input flex-1" type="text" id="new-user-name" placeholder="Your gamer tag" maxlength="30" autocomplete="off">
+        <button class="btn btn-primary" id="btn-create-user">Join</button>
+      </div>
+    </div>
+
+    <div id="existing-users-section" class="hidden">
+      <p class="label">Or pick your name:</p>
+      <div class="user-list" id="user-list"></div>
+    </div>
+  </div>
+
+  <!-- View 2: Order Form -->
+  <div id="view-order-form" class="hidden">
+    <div class="flex items-center justify-between mb-2">
+      <h2>Hey, <span id="display-username" class="accent"></span>!</h2>
+      <button class="btn btn-ghost btn-sm" id="btn-switch-user">Switch</button>
+    </div>
+
+    <!-- Bar closed/paused message -->
+    <div id="bar-status-msg" class="hidden card mb-2" style="border-color: var(--color-danger);">
+      <p id="bar-status-text" class="text-danger" style="font-weight:600;"></p>
+    </div>
+
+    <!-- Push notification banner -->
+    <div class="push-banner" id="push-banner">
+      <span class="push-icon">🔔</span>
+      <span class="flex-1">Get notified when your drink is ready!</span>
+      <button class="btn btn-sm btn-primary" id="btn-enable-push">Enable</button>
+    </div>
+
+    <div class="tabs" id="order-tabs">
+      <button class="tab active" data-tab="menu">Menu</button>
+      <button class="tab" data-tab="add-drink">Add Drink</button>
+      <button class="tab" data-tab="free-text">Free Text</button>
+    </div>
+
+    <!-- Tab: Menu -->
+    <div id="tab-menu">
+      <div id="drink-menu"></div>
+    </div>
+
+    <!-- Tab: Add Drink -->
+    <div id="tab-add-drink" class="hidden">
+      <div class="form-group">
+        <label class="label" for="new-drink-name">Drink name</label>
+        <input class="input" type="text" id="new-drink-name" placeholder="e.g. Bionade Ingwer" maxlength="60" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="label" for="new-drink-category">Category</label>
+        <select class="select" id="new-drink-category">
+          <option value="soft">Soft Drink</option>
+          <option value="energy">Energy</option>
+          <option value="beer">Beer</option>
+          <option value="cocktail">Cocktail</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-full" id="btn-add-drink">Add to Menu & Select</button>
+    </div>
+
+    <!-- Tab: Free Text -->
+    <div id="tab-free-text" class="hidden">
+      <div class="form-group">
+        <label class="label" for="free-text-input">Describe your order</label>
+        <input class="input" type="text" id="free-text-input" placeholder="e.g. A glass of water with ice" maxlength="100" autocomplete="off">
+      </div>
+      <p class="text-muted">This won't be added to the menu.</p>
+    </div>
+
+    <div class="card mt-2" style="background: var(--color-bg);">
+      <div class="flex items-center justify-between mb-1">
+        <span class="label" style="margin:0;">Quantity</span>
+        <div class="qty-control">
+          <button class="qty-btn" id="qty-minus">−</button>
+          <span class="qty-value" id="qty-display">1</span>
+          <button class="qty-btn" id="qty-plus">+</button>
+        </div>
+      </div>
+      <div id="selected-drink-preview" class="text-muted" style="font-size:.875rem;"></div>
+    </div>
+
+    <button class="btn btn-primary btn-full mt-2" id="btn-submit-order" disabled>Order Now</button>
+  </div>
+
+  <!-- View 3: Waiting -->
+  <div id="view-waiting" class="hidden">
+    <div class="status-card" id="waiting-status-card">
+      <div class="status-icon" id="status-icon">⏳</div>
+      <h2 id="status-title">Order Sent!</h2>
+      <p class="text-muted mt-1" id="status-description">Your order is in the queue. The bartender will get to it shortly.</p>
+      <div id="status-comment" class="hidden card mt-2" style="border-color:var(--color-accent);">
+        <p class="text-muted" style="font-size:.875rem;margin-bottom:.25rem;">Message from the bar:</p>
+        <p id="comment-text" style="font-weight:600;"></p>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-full mt-3" id="btn-order-again">Order Again</button>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/socket-client.js"></script>
+<script src="/js/push-client.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/pages/guest.js"></script>
+</body>
+</html>

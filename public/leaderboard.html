@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard – Barcraft</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+<!-- Password overlay -->
+<div id="password-overlay" class="hidden">
+  <div class="auth-card">
+    <h1>🍺 Barcraft</h1>
+    <p>Enter the bar password to continue</p>
+    <form id="password-form">
+      <div class="form-group">
+        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Enter</button>
+      <p id="auth-error" class="auth-error"></p>
+    </form>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container-wide">
+    <span class="page-title">📊 <span class="accent">Leaderboard</span></span>
+    <a href="/" class="btn btn-ghost btn-sm">← Home</a>
+  </div>
+</div>
+
+<div class="container-wide" style="padding-bottom:2rem;">
+
+  <!-- Stat cards -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">–</div>
+      <div class="stat-label">Total Orders</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-served">–</div>
+      <div class="stat-label">Drinks Served</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-top-drink" style="font-size:1.25rem;">–</div>
+      <div class="stat-label">Top Drink</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-top-user" style="font-size:1.25rem;">–</div>
+      <div class="stat-label">Top Customer</div>
+    </div>
+  </div>
+
+  <div class="flex gap-2 flex-wrap">
+    <!-- Top Drinks chart -->
+    <div class="card flex-1" style="min-width:260px;">
+      <h3 class="mb-1">🍹 Top Drinks</h3>
+      <div class="bar-chart" id="drinks-chart"></div>
+    </div>
+
+    <!-- Top customers -->
+    <div class="card flex-1" style="min-width:220px;">
+      <h3 class="mb-1">🏆 Top Customers</h3>
+      <ul class="leaderboard-list" id="users-list"></ul>
+    </div>
+  </div>
+
+  <!-- Activity feed -->
+  <div class="card mt-2">
+    <h3 class="mb-1">⚡ Recent Activity</h3>
+    <ul class="activity-feed" id="activity-feed"></ul>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/socket-client.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/pages/leaderboard.js"></script>
+</body>
+</html>

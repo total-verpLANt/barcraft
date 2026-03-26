@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bar – Barcraft</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+<!-- Password overlay -->
+<div id="password-overlay" class="hidden">
+  <div class="auth-card">
+    <h1>🍺 Barcraft</h1>
+    <p>Enter the bar password to continue</p>
+    <form id="password-form">
+      <div class="form-group">
+        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Enter</button>
+      <p id="auth-error" class="auth-error"></p>
+    </form>
+  </div>
+</div>
+
+<!-- New order alert overlay -->
+<div id="bar-alert-overlay" class="hidden">
+  <div class="alert-title">NEW ORDER!</div>
+  <div class="alert-order" id="alert-drink"></div>
+  <div class="alert-qty" id="alert-qty"></div>
+  <div style="margin-top:.5rem;opacity:.8;font-size:1rem;" id="alert-user"></div>
+</div>
+
+<div class="page-header">
+  <div class="container-wide">
+    <span class="page-title">🍹 <span class="accent">Barcraft</span> – Bar</span>
+    <div class="flex items-center gap-1">
+      <span id="bar-state-badge" class="badge badge-open">● Open</span>
+      <a href="/" class="btn btn-ghost btn-sm">← Home</a>
+    </div>
+  </div>
+</div>
+
+<div class="container-wide" style="padding-bottom:2rem;">
+
+  <!-- Bar Controls -->
+  <div class="bar-controls" id="bar-controls">
+    <div class="bar-controls-header" id="controls-toggle">
+      <span style="font-weight:700;">⚙️ Bar Controls</span>
+      <span id="controls-arrow">▲</span>
+    </div>
+    <div class="bar-controls-body" id="controls-body">
+      <button class="btn btn-danger btn-sm" id="btn-close-bar">🔒 Schließen</button>
+      <button class="btn btn-secondary btn-sm" id="btn-pause-bar">⏸ Pausieren</button>
+      <button class="btn btn-success btn-sm" id="btn-open-bar">✅ Öffnen</button>
+      <div class="time-input-group">
+        <input class="input" type="time" id="closing-time-input" placeholder="HH:MM">
+        <button class="btn btn-sm btn-secondary" id="btn-set-closing-time">Set closing time</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standby -->
+  <div id="bar-standby" class="hidden status-card">
+    <div class="status-icon">🟢</div>
+    <h2>Bar is Open</h2>
+    <p class="text-muted mt-1">Waiting for orders…</p>
+    <div id="standby-pending-count" class="hidden mt-2">
+      <span class="badge-count pulse-dot" id="standby-count-badge">0</span>
+      <span class="text-muted" style="margin-left:.5rem;">pending orders</span>
+    </div>
+  </div>
+
+  <!-- Active queue -->
+  <div id="bar-queue">
+
+    <!-- Pending -->
+    <div class="section-header">
+      <span class="section-title">Pending</span>
+      <span class="badge-count" id="pending-count">0</span>
+    </div>
+    <div id="pending-orders"></div>
+    <p id="no-pending" class="text-muted" style="margin-bottom:1rem;">No pending orders</p>
+
+    <!-- Accepted/In-Prep -->
+    <div class="section-header mt-2">
+      <span class="section-title">In Preparation</span>
+    </div>
+    <div id="accepted-orders"></div>
+    <p id="no-accepted" class="text-muted" style="margin-bottom:1rem;">Nothing in prep</p>
+
+    <!-- Completed (last 3) -->
+    <div class="section-header mt-2">
+      <span class="section-title">Recently Completed</span>
+    </div>
+    <div id="completed-orders"></div>
+
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/socket-client.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/pages/bar.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcraft</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+<!-- Password overlay -->
+<div id="password-overlay">
+  <div class="auth-card">
+    <h1>🍺 Barcraft</h1>
+    <p>Enter the bar password to continue</p>
+    <form id="password-form">
+      <div class="form-group">
+        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Enter</button>
+      <p id="auth-error" class="auth-error"></p>
+    </form>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="container">
+    <span class="page-title">🍺 <span class="accent">Barcraft</span></span>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 1rem;">
+  <h2 class="text-center">Welcome to Barcraft</h2>
+  <p class="text-muted text-center mt-1">Choose your mode to get started</p>
+
+  <div class="mode-grid">
+    <a href="/bar.html" class="mode-card">
+      <span class="mode-icon">🍹</span>
+      <span>Bar Mode</span>
+      <span class="text-muted" style="font-weight:400;font-size:.8rem">For the bartender tablet</span>
+    </a>
+    <a href="/guest.html" class="mode-card">
+      <span class="mode-icon">🎮</span>
+      <span>Guest Mode</span>
+      <span class="text-muted" style="font-weight:400;font-size:.8rem">Order from your seat</span>
+    </a>
+  </div>
+
+  <div class="text-center mt-3">
+    <a href="/leaderboard.html" class="btn btn-ghost">📊 Leaderboard</a>
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/pages/index.js"></script>
+</body>
+</html>
