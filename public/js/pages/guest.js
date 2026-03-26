@@ -1,6 +1,6 @@
 'use strict';
 
-(function () {
+(async function () {
   const { escapeHtml, groupBy, triggerFlash } = Utils;
   const socket = SocketClient.getSocket();
 
@@ -19,8 +19,8 @@
   let currentOrderId = null;
   let barState = { status: 'open' };
 
-  // Storage key for persisting userId
   const USER_KEY = 'barcraft_user';
+  const ORDER_KEY = 'barcraft_active_order';
 
   function saveUser(user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -29,6 +29,21 @@
   function loadUser() {
     try {
       const s = localStorage.getItem(USER_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  }
+
+  function saveActiveOrder(orderId, drinkName) {
+    localStorage.setItem(ORDER_KEY, JSON.stringify({ orderId, drinkName }));
+  }
+
+  function clearActiveOrder() {
+    localStorage.removeItem(ORDER_KEY);
+  }
+
+  function loadActiveOrder() {
+    try {
+      const s = localStorage.getItem(ORDER_KEY);
       return s ? JSON.parse(s) : null;
     } catch { return null; }
   }
@@ -302,6 +317,7 @@
         const { order } = await res.json();
         currentOrderId = order.id;
         currentOrderDrinkName = selectedDrink.name;
+        saveActiveOrder(order.id, selectedDrink.name);
         showWaiting('pending');
       } else {
         const err = await res.json();
@@ -326,6 +342,7 @@
     currentOrderId = null;
     currentOrderStatus = null;
     currentOrderDrinkName = null;
+    clearActiveOrder();
     updateWidget(null);
     initOrderForm();
   });
@@ -471,11 +488,39 @@
   });
 
   // Init
+  async function restoreActiveOrder() {
+    const saved = loadActiveOrder();
+    if (!saved) return;
+    try {
+      const res = await fetch(`/api/orders/${saved.orderId}`);
+      if (!res.ok) { clearActiveOrder(); return; }
+      const { order } = await res.json();
+      if (!order || order.status === 'completed' || order.status === 'rejected') {
+        // Terminal state – keep widget visible so user sees the result, but don't auto-clear
+        if (order) {
+          currentOrderId = order.id;
+          currentOrderDrinkName = saved.drinkName;
+          currentOrderStatus = order.status;
+          updateWidget(order.status, saved.drinkName);
+        } else {
+          clearActiveOrder();
+        }
+        return;
+      }
+      currentOrderId = order.id;
+      currentOrderDrinkName = saved.drinkName;
+      currentOrderStatus = order.status;
+      updateWidget(order.status, saved.drinkName);
+    } catch {
+      clearActiveOrder();
+    }
+  }
+
   const savedUser = loadUser();
   if (savedUser) {
     currentUser = savedUser;
     socket.emit('client:guest_join', { userId: savedUser.id });
-    initOrderForm();
+    await Promise.all([initOrderForm(), restoreActiveOrder()]);
   } else {
     initUserSelect();
   }
