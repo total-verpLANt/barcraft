@@ -33,28 +33,13 @@ async function writeJson(filename, data) {
   return next;
 }
 
-const SEED_DRINKS = [
-  { name: 'Club Mate', category: 'soft' },
-  { name: 'Club Mate Cola', category: 'soft' },
-  { name: 'Fritz Kola', category: 'soft' },
-  { name: 'Red Bull', category: 'energy' },
-  { name: 'Monster Energy', category: 'energy' },
-  { name: 'Bionade Holunder', category: 'soft' },
-  { name: 'Wasser still', category: 'soft' },
-  { name: 'Wasser sprudel', category: 'soft' },
-  { name: 'Bier', category: 'beer' },
-  { name: 'Radler', category: 'beer' },
-  { name: 'Whisky Cola', category: 'cocktail' },
-  { name: 'Vodka Orange', category: 'cocktail' },
-];
-
 async function initializeDb() {
   await ensureDataDir();
-  const { generateId } = require('../utils/idGenerator');
 
   const files = {
     'orders.json': { orders: [] },
     'users.json': { users: [] },
+    'drinks.json': { drinks: [] },
     'push-subscriptions.json': { subscriptions: [] },
     'bar-state.json': { status: 'open', closingTime: null, pausedAt: null, message: '' },
   };
@@ -64,20 +49,6 @@ async function initializeDb() {
     if (!existing) {
       await writeJson(filename, defaultData);
     }
-  }
-
-  const existingDrinks = await readJson('drinks.json');
-  if (!existingDrinks) {
-    const now = new Date().toISOString();
-    const drinks = SEED_DRINKS.map(d => ({
-      id: generateId('drk'),
-      name: d.name,
-      category: d.category,
-      available: true,
-      orderCount: 0,
-      createdAt: now,
-    }));
-    await writeJson('drinks.json', { drinks });
   }
 }
 

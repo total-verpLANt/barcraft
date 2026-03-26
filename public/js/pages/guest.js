@@ -371,9 +371,18 @@
   }
 
   // Push banner
-  function setupPushBanner() {
+  async function setupPushBanner() {
     const banner = document.getElementById('push-banner');
-    if (!('Notification' in window) || Notification.permission === 'granted') {
+    const pushSupported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+    if (!pushSupported || Notification.permission === 'granted') {
+      banner.classList.add('hidden');
+      return;
+    }
+    // Check if VAPID is configured on the server
+    try {
+      const res = await fetch('/api/push/vapid-public-key');
+      if (!res.ok) { banner.classList.add('hidden'); return; }
+    } catch {
       banner.classList.add('hidden');
       return;
     }
@@ -382,8 +391,21 @@
 
   document.getElementById('btn-enable-push').addEventListener('click', async () => {
     if (!currentUser) return;
+    const btn = document.getElementById('btn-enable-push');
+    btn.disabled = true;
+    btn.textContent = '…';
     const ok = await PushClient.registerPushSubscription(currentUser.id);
-    if (ok) document.getElementById('push-banner').classList.add('hidden');
+    if (ok) {
+      document.getElementById('push-banner').classList.add('hidden');
+    } else {
+      btn.textContent = 'Failed';
+      btn.style.background = 'var(--color-danger)';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = 'Enable';
+        btn.style.background = '';
+      }, 3000);
+    }
   });
 
   // === Socket events ===
