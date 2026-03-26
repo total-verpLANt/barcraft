@@ -120,8 +120,8 @@
       </div>
       <div class="order-meta">${formatRelativeTime(order.createdAt)}</div>
       <div class="order-actions">
-        <button class="btn btn-primary btn-sm" data-action="accept" data-id="${escapeHtml(order.id)}">✓ Accept</button>
-        <button class="btn btn-danger btn-sm" data-action="reject-expand" data-id="${escapeHtml(order.id)}">✗ Reject</button>
+        <button class="btn btn-primary" data-action="accept" data-id="${escapeHtml(order.id)}">✓ Accept</button>
+        <button class="btn btn-danger" data-action="reject-expand" data-id="${escapeHtml(order.id)}">✗ Reject</button>
       </div>
       <div class="reject-expand hidden" id="reject-${escapeHtml(order.id)}">
         <div class="quick-replies">
@@ -131,8 +131,8 @@
         </div>
         <input class="input" type="text" placeholder="Custom comment (optional)" id="reject-comment-${escapeHtml(order.id)}" maxlength="100">
         <div class="flex gap-1 mt-1">
-          <button class="btn btn-danger btn-sm flex-1" data-action="reject-confirm" data-id="${escapeHtml(order.id)}">Confirm Reject</button>
-          <button class="btn btn-ghost btn-sm" data-action="reject-cancel" data-id="${escapeHtml(order.id)}">Cancel</button>
+          <button class="btn btn-danger flex-1" data-action="reject-confirm" data-id="${escapeHtml(order.id)}">Confirm Reject</button>
+          <button class="btn btn-ghost" data-action="reject-cancel" data-id="${escapeHtml(order.id)}">Cancel</button>
         </div>
       </div>
     </div>`;
@@ -153,7 +153,10 @@
       </div>
       <div class="flex items-center justify-between mt-1">
         <span class="order-timer ${warnClass}" id="timer-${escapeHtml(order.id)}">⏱ ${elapsed}</span>
-        <button class="btn btn-success btn-sm" data-action="complete" data-id="${escapeHtml(order.id)}">✓ Ready</button>
+        <div class="flex gap-1">
+          <button class="btn btn-danger btn-sm" data-action="cancel-accepted" data-id="${escapeHtml(order.id)}">✕ Abbrechen</button>
+          <button class="btn btn-success" data-action="complete" data-id="${escapeHtml(order.id)}">✓ Ready</button>
+        </div>
       </div>
       ${order.barComment ? `<div class="order-meta mt-1">💬 ${escapeHtml(order.barComment)}</div>` : ''}
     </div>`;
@@ -194,7 +197,9 @@
     const action = btn.dataset.action;
     const orderId = btn.dataset.id;
 
-    if (action === 'accept') {
+    if (action === 'cancel-accepted') {
+      await updateOrder(orderId, 'rejected', 'Bestellung wurde abgebrochen.');
+    } else if (action === 'accept') {
       await updateOrder(orderId, 'accepted');
     } else if (action === 'reject-expand') {
       document.getElementById(`reject-${orderId}`)?.classList.toggle('hidden');

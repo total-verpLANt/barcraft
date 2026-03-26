@@ -342,6 +342,7 @@
     currentOrderId = null;
     currentOrderStatus = null;
     currentOrderDrinkName = null;
+    currentOrderBarComment = null;
     clearActiveOrder();
     updateWidget(null);
     initOrderForm();
@@ -350,6 +351,7 @@
   // === Order status widget ===
   let currentOrderStatus = null;
   let currentOrderDrinkName = null;
+  let currentOrderBarComment = null;
 
   const WIDGET_CONFIG = {
     pending:   { icon: '⏳', label: 'In der Warteschlange', cls: '' },
@@ -371,7 +373,7 @@
   }
 
   document.getElementById('order-status-widget').addEventListener('click', () => {
-    if (currentOrderStatus) showWaiting(currentOrderStatus);
+    if (currentOrderStatus) showWaiting(currentOrderStatus, currentOrderBarComment);
   });
 
   // === Waiting View ===
@@ -462,6 +464,7 @@
   socket.on('guest:order_accepted', ({ orderId, barComment }) => {
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'accepted';
+    currentOrderBarComment = barComment || null;
     updateWidget('accepted', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
@@ -469,6 +472,7 @@
   socket.on('guest:order_rejected', ({ orderId, barComment }) => {
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'rejected';
+    currentOrderBarComment = barComment || null;
     updateWidget('rejected', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
   });
@@ -476,6 +480,7 @@
   socket.on('guest:order_completed', ({ orderId }) => {
     if (orderId !== currentOrderId) return;
     currentOrderStatus = 'completed';
+    currentOrderBarComment = null;
     updateWidget('completed', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('completed');
   });
@@ -510,6 +515,7 @@
       currentOrderId = order.id;
       currentOrderDrinkName = saved.drinkName;
       currentOrderStatus = order.status;
+      currentOrderBarComment = order.barComment || null;
       updateWidget(order.status, saved.drinkName);
     } catch {
       clearActiveOrder();
