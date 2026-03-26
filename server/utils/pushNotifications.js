@@ -8,13 +8,19 @@ const FILE = 'push-subscriptions.json';
 function initWebPush() {
   const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL } = process.env;
   if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-      VAPID_EMAIL || 'mailto:admin@barcraft.local',
-      VAPID_PUBLIC_KEY,
-      VAPID_PRIVATE_KEY
-    );
-    return true;
+    try {
+      webpush.setVapidDetails(
+        VAPID_EMAIL || 'mailto:admin@barcraft.local',
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY
+      );
+      return true;
+    } catch (err) {
+      console.warn('[push] Invalid VAPID keys, push notifications disabled:', err.message);
+      return false;
+    }
   }
+  console.warn('[push] No VAPID keys configured, push notifications disabled.');
   return false;
 }
 
