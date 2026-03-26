@@ -237,17 +237,26 @@
   }
 
   // === New order alert overlay ===
+  let alertTimeout = null;
+
+  function dismissAlert() {
+    clearTimeout(alertTimeout);
+    const overlay = document.getElementById('bar-alert-overlay');
+    overlay.classList.add('hidden');
+  }
+
   function showOrderAlert(order) {
     const overlay = document.getElementById('bar-alert-overlay');
     document.getElementById('alert-drink').textContent = order.drink.name;
     document.getElementById('alert-qty').textContent = `× ${order.quantity}`;
-    document.getElementById('alert-user').textContent = order.userName;
+    document.getElementById('alert-user').textContent = `von ${order.userName}`;
     overlay.classList.remove('hidden');
     overlay.style.animation = 'none';
     void overlay.offsetWidth;
-    overlay.style.animation = 'overlayPulse 5s ease-in-out forwards';
-    setTimeout(() => overlay.classList.add('hidden'), 5000);
-    overlay.onclick = () => overlay.classList.add('hidden');
+    overlay.style.animation = 'overlayPulse 10s ease-in-out forwards';
+    clearTimeout(alertTimeout);
+    alertTimeout = setTimeout(dismissAlert, 10000);
+    overlay.onclick = dismissAlert;
   }
 
   // === Bar controls ===

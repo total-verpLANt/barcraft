@@ -340,7 +340,7 @@
 #bar-alert-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(245, 158, 11, 0.95);
+  background: rgba(245, 158, 11, 0.97);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -348,26 +348,37 @@
   flex-direction: column;
   text-align: center;
   padding: 2rem;
-  animation: overlayPulse 5s ease-in-out forwards;
+  cursor: pointer;
+  animation: overlayPulse 10s ease-in-out forwards;
 }
 
 #bar-alert-overlay .alert-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  opacity: 0.8;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: .1em;
 }
 
 #bar-alert-overlay .alert-order {
-  font-size: 2rem;
+  font-size: clamp(3rem, 10vw, 6rem);
   font-weight: 900;
-  line-height: 1.2;
-  margin-bottom: 0.5rem;
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+  color: #000;
 }
 
 #bar-alert-overlay .alert-qty {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 900;
+  color: #000;
+}
+
+#bar-alert-overlay .alert-dismiss {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  opacity: 0.5;
 }
 
 /* === Bar controls panel === */
