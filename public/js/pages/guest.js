@@ -346,10 +346,8 @@
   document.getElementById('btn-order-again').addEventListener('click', () => {
     currentOrderId = null;
     currentOrderStatus = null;
-    currentOrderDrinkName = null;
     currentOrderBarComment = null;
     clearActiveOrder();
-    updateWidget(null);
     initOrderForm();
   });
 
