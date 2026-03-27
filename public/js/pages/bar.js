@@ -105,28 +105,7 @@
   }
 
   // === Rendering ===
-  function saveRejectState() {
-    const state = {};
-    document.querySelectorAll('.reject-expand:not(.hidden)').forEach(el => {
-      const id = el.id.replace('reject-', '');
-      const comment = document.getElementById(`reject-comment-${id}`)?.value || '';
-      state[id] = comment;
-    });
-    return state;
-  }
-
-  function restoreRejectState(state) {
-    Object.entries(state).forEach(([id, comment]) => {
-      const panel = document.getElementById(`reject-${id}`);
-      if (!panel) return;
-      panel.classList.remove('hidden');
-      const input = document.getElementById(`reject-comment-${id}`);
-      if (input && comment) input.value = comment;
-    });
-  }
-
   function renderAll() {
-    const rejectState = saveRejectState();
     const pending = orders.filter(o => o.status === 'pending');
     const accepted = orders.filter(o => o.status === 'accepted');
     const completed = orders
@@ -151,7 +130,6 @@
     document.getElementById('standby-count-badge').textContent = pending.length;
 
     attachCardListeners();
-    restoreRejectState(rejectState);
   }
 
   function renderPendingCard(order) {
@@ -170,19 +148,7 @@
       <div class="order-meta">${formatRelativeTime(order.createdAt)}</div>
       <div class="order-actions">
         <button class="btn btn-primary" data-action="accept" data-id="${escapeHtml(order.id)}">✓ Accept</button>
-        <button class="btn btn-danger" data-action="reject-expand" data-id="${escapeHtml(order.id)}">✗ Reject</button>
-      </div>
-      <div class="reject-expand hidden" id="reject-${escapeHtml(order.id)}">
-        <div class="quick-replies">
-          <button class="quick-reply-chip" data-msg="Sold out">Sold out</button>
-          <button class="quick-reply-chip" data-msg="Bar is closed">Bar is closed</button>
-          <button class="quick-reply-chip" data-msg="One moment">One moment</button>
-        </div>
-        <input class="input" type="text" placeholder="Custom comment (optional)" id="reject-comment-${escapeHtml(order.id)}" maxlength="100">
-        <div class="flex gap-1 mt-1">
-          <button class="btn btn-danger flex-1" data-action="reject-confirm" data-id="${escapeHtml(order.id)}">Confirm Reject</button>
-          <button class="btn btn-ghost" data-action="reject-cancel" data-id="${escapeHtml(order.id)}">Cancel</button>
-        </div>
+        <button class="btn btn-danger" data-action="reject" data-id="${escapeHtml(order.id)}">✗ Reject</button>
       </div>
     </div>`;
   }
@@ -232,16 +198,6 @@
     document.querySelectorAll('[data-action]').forEach(el => {
       el.addEventListener('click', handleCardAction);
     });
-    document.querySelectorAll('.quick-reply-chip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
-        const orderId = chip.closest('.reject-expand')?.id?.replace('reject-', '');
-        if (!orderId) return;
-        const input = document.getElementById(`reject-comment-${orderId}`);
-        if (input) input.value = chip.dataset.msg;
-        chip.closest('.quick-replies').querySelectorAll('.quick-reply-chip').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-      });
-    });
   }
 
   async function handleCardAction(e) {
@@ -253,13 +209,8 @@
       await updateOrder(orderId, 'rejected', 'Bestellung wurde abgebrochen.');
     } else if (action === 'accept') {
       await updateOrder(orderId, 'accepted');
-    } else if (action === 'reject-expand') {
-      document.getElementById(`reject-${orderId}`)?.classList.toggle('hidden');
-    } else if (action === 'reject-cancel') {
-      document.getElementById(`reject-${orderId}`)?.classList.add('hidden');
-    } else if (action === 'reject-confirm') {
-      const comment = document.getElementById(`reject-comment-${orderId}`)?.value || '';
-      await updateOrder(orderId, 'rejected', comment);
+    } else if (action === 'reject') {
+      await updateOrder(orderId, 'rejected');
     } else if (action === 'complete') {
       await updateOrder(orderId, 'completed');
     }

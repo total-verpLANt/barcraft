@@ -91,20 +91,26 @@
   <!-- Active queue -->
   <div id="bar-queue">
 
-    <!-- Pending -->
-    <div class="section-header">
-      <span class="section-title">Pending</span>
-      <span class="badge-count" id="pending-count">0</span>
-    </div>
-    <div id="pending-orders"></div>
-    <p id="no-pending" class="text-muted" style="margin-bottom:1rem;">No pending orders</p>
+    <div class="bar-columns">
+      <!-- Pending -->
+      <div class="bar-col">
+        <div class="section-header">
+          <span class="section-title">Pending</span>
+          <span class="badge-count" id="pending-count">0</span>
+        </div>
+        <div id="pending-orders"></div>
+        <p id="no-pending" class="text-muted" style="margin-bottom:1rem;">No pending orders</p>
+      </div>
 
-    <!-- Accepted/In-Prep -->
-    <div class="section-header mt-2">
-      <span class="section-title">In Preparation</span>
+      <!-- Accepted/In-Prep -->
+      <div class="bar-col">
+        <div class="section-header">
+          <span class="section-title">In Preparation</span>
+        </div>
+        <div id="accepted-orders"></div>
+        <p id="no-accepted" class="text-muted" style="margin-bottom:1rem;">Nothing in prep</p>
+      </div>
     </div>
-    <div id="accepted-orders"></div>
-    <p id="no-accepted" class="text-muted" style="margin-bottom:1rem;">Nothing in prep</p>
 
     <!-- Completed (last 3) -->
     <div class="section-header mt-2">
