@@ -343,6 +343,11 @@
     initUserSelect();
   });
 
+  document.getElementById('btn-logo').addEventListener('click', () => {
+    if (currentUser) initOrderForm();
+    else initUserSelect();
+  });
+
   document.getElementById('btn-order-again').addEventListener('click', () => {
     currentOrderId = null;
     currentOrderStatus = null;
