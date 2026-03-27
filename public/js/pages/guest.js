@@ -190,28 +190,20 @@
       return categoryOrder.indexOf(a[0]) - categoryOrder.indexOf(b[0]);
     });
 
-    const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([v, l]) =>
-      `<option value="${v}">${l}</option>`
-    ).join('');
-
     container.innerHTML = sortedGroups.map(([cat, items]) => `
       <p class="category-label">${escapeHtml(CATEGORY_LABELS[cat] || cat)}</p>
       <div class="drink-grid">
         ${items.map(d => `
           <div class="drink-option${selectedDrink && selectedDrink.drinkId === d.id ? ' selected' : ''}"
                data-id="${escapeHtml(d.id)}" data-name="${escapeHtml(d.name)}">
-            <span class="drink-option-name">${escapeHtml(d.name)}</span>
-            <select class="drink-cat-edit" data-id="${escapeHtml(d.id)}" title="Kategorie ändern">
-              ${CATEGORY_OPTIONS.replace(`value="${escapeHtml(d.category)}"`, `value="${escapeHtml(d.category)}" selected`)}
-            </select>
+            ${escapeHtml(d.name)}
           </div>
         `).join('')}
       </div>
     `).join('');
 
     container.querySelectorAll('.drink-option').forEach(el => {
-      el.addEventListener('click', (e) => {
-        if (e.target.closest('.drink-cat-edit')) return;
+      el.addEventListener('click', () => {
         selectedDrink = { drinkId: el.dataset.id, name: el.dataset.name, isFreeText: false };
         container.querySelectorAll('.drink-option').forEach(o => o.classList.remove('selected'));
         el.classList.add('selected');
@@ -219,16 +211,40 @@
         updateSubmitButton();
       });
     });
+  }
 
+  async function loadEditDrinks() {
+    try {
+      const res = await fetch('/api/drinks');
+      const { drinks } = await res.json();
+      renderEditDrinks(drinks || []);
+    } catch { }
+  }
+
+  function renderEditDrinks(drinks) {
+    const container = document.getElementById('edit-drink-list');
+    if (drinks.length === 0) {
+      container.innerHTML = '<p class="text-muted">Noch keine Getränke im Menü.</p>';
+      return;
+    }
+    const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([v, l]) =>
+      `<option value="${v}">${l}</option>`
+    ).join('');
+    container.innerHTML = drinks.map(d => `
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--color-border);">
+        <span style="flex:1;font-weight:500;">${escapeHtml(d.name)}</span>
+        <select class="select drink-cat-edit" data-id="${escapeHtml(d.id)}" style="width:auto;">
+          ${CATEGORY_OPTIONS.replace(`value="${escapeHtml(d.category)}"`, `value="${escapeHtml(d.category)}" selected`)}
+        </select>
+      </div>
+    `).join('');
     container.querySelectorAll('.drink-cat-edit').forEach(sel => {
-      sel.addEventListener('change', async (e) => {
-        e.stopPropagation();
+      sel.addEventListener('change', async () => {
         await fetch(`/api/drinks/${sel.dataset.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ category: sel.value }),
         });
-        await loadMenu();
       });
     });
   }
@@ -241,7 +257,7 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     activeTab = tab;
-    ['tab-menu', 'tab-add-drink', 'tab-free-text'].forEach(id => {
+    ['tab-menu', 'tab-add-drink', 'tab-free-text', 'tab-edit-drink'].forEach(id => {
       document.getElementById(id).classList.add('hidden');
     });
     document.getElementById(`tab-${tab}`).classList.remove('hidden');
@@ -253,6 +269,9 @@
     }
     if (tab === 'free-text') {
       document.getElementById('free-text-input').focus();
+    }
+    if (tab === 'edit-drink') {
+      loadEditDrinks();
     }
   });
 
