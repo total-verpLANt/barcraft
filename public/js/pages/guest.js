@@ -442,6 +442,10 @@
       banner.classList.add('hidden');
       return;
     }
+    if (Notification.permission === 'denied') {
+      document.getElementById('push-banner-text').textContent = 'Notifications blockiert – in den Browser-Einstellungen erlauben.';
+      document.getElementById('btn-enable-push').classList.add('hidden');
+    }
     banner.classList.remove('hidden');
   }
 
@@ -452,14 +456,12 @@
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       document.getElementById('push-banner').classList.add('hidden');
+    } else if (permission === 'denied') {
+      document.getElementById('push-banner-text').textContent = 'Notifications blockiert – in den Browser-Einstellungen erlauben.';
+      btn.classList.add('hidden');
     } else {
-      btn.textContent = 'Abgelehnt';
-      btn.style.background = 'var(--color-danger)';
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = 'Enable';
-        btn.style.background = '';
-      }, 3000);
+      btn.disabled = false;
+      btn.textContent = 'Enable';
     }
   });
 
