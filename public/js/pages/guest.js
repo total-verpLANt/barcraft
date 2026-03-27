@@ -466,7 +466,7 @@
     if (activeOrders.length === 0) { widget.classList.add('hidden'); return; }
     document.getElementById('widget-orders').innerHTML = activeOrders.map(o => {
       const cfg = WIDGET_CONFIG[o.status] || WIDGET_CONFIG.pending;
-      return `<div class="widget-order-row">
+      return `<div class="widget-order-row widget-row-${o.status}">
         <span class="widget-row-icon">${cfg.icon}</span>
         <div class="widget-text">
           <span class="widget-drink-name">${escapeHtml(o.drinkName)}</span>

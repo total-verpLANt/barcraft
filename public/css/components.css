@@ -640,6 +640,9 @@
   display: flex;
   align-items: center;
   gap: .625rem;
+  border-left: 3px solid transparent;
+  padding-left: .5rem;
+  border-radius: 2px;
 }
 
 .widget-order-row + .widget-order-row {
@@ -647,6 +650,11 @@
   padding-top: .375rem;
   border-top: 1px solid var(--color-border);
 }
+
+.widget-row-pending   { border-left-color: var(--color-accent); }
+.widget-row-accepted  { border-left-color: #3b82f6; }
+.widget-row-completed { border-left-color: var(--color-success); }
+.widget-row-rejected  { border-left-color: var(--color-danger); }
 
 .widget-row-icon { font-size: 1.25rem; flex-shrink: 0; }
 
