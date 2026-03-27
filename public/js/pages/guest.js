@@ -595,6 +595,14 @@
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
+  function scheduleOrderRemoval(orderId) {
+    setTimeout(() => {
+      activeOrders = activeOrders.filter(o => o.orderId !== orderId);
+      saveActiveOrders();
+      updateWidget();
+    }, 10000);
+  }
+
   socket.on('guest:order_rejected', ({ orderId, barComment }) => {
     const o = activeOrders.find(o => o.orderId === orderId);
     if (!o) return;
@@ -606,6 +614,7 @@
     notify('❌ Bestellung abgelehnt', barComment || o.drinkName);
     showGuestAlert('rejected', o.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
+    scheduleOrderRemoval(orderId);
   });
 
   socket.on('guest:order_completed', ({ orderId }) => {
@@ -619,6 +628,7 @@
     notify('🎉 Abholbereit!', `${o.drinkName} – komm an die Bar!`);
     showGuestAlert('completed', o.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('completed');
+    scheduleOrderRemoval(orderId);
   });
 
   socket.on('global:bar_state_changed', (state) => {
@@ -629,7 +639,8 @@
   });
 
   function restoreActiveOrders() {
-    activeOrders = loadActiveOrders();
+    activeOrders = loadActiveOrders().filter(o => o.status === 'pending' || o.status === 'accepted');
+    saveActiveOrders();
     updateWidget();
   }
 
