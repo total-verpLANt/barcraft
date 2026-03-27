@@ -430,19 +430,15 @@
     }
   }
 
-  // Push banner
-  async function setupPushBanner() {
+  // Browser notifications (simple, no service worker needed)
+  function notify(title, body) {
+    if (Notification.permission !== 'granted') return;
+    new Notification(title, { body, icon: '/favicon.ico' });
+  }
+
+  function setupPushBanner() {
     const banner = document.getElementById('push-banner');
-    const pushSupported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-    if (!pushSupported || Notification.permission === 'granted') {
-      banner.classList.add('hidden');
-      return;
-    }
-    // Check if VAPID is configured on the server
-    try {
-      const res = await fetch('/api/push/vapid-public-key');
-      if (!res.ok) { banner.classList.add('hidden'); return; }
-    } catch {
+    if (!('Notification' in window) || Notification.permission === 'granted') {
       banner.classList.add('hidden');
       return;
     }
@@ -450,15 +446,14 @@
   }
 
   document.getElementById('btn-enable-push').addEventListener('click', async () => {
-    if (!currentUser) return;
     const btn = document.getElementById('btn-enable-push');
     btn.disabled = true;
     btn.textContent = '…';
-    const ok = await PushClient.registerPushSubscription(currentUser.id);
-    if (ok) {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
       document.getElementById('push-banner').classList.add('hidden');
     } else {
-      btn.textContent = 'Failed';
+      btn.textContent = 'Abgelehnt';
       btn.style.background = 'var(--color-danger)';
       setTimeout(() => {
         btn.disabled = false;
@@ -475,6 +470,7 @@
     currentOrderBarComment = barComment || null;
     updateSavedOrderStatus('accepted', currentOrderBarComment);
     updateWidget('accepted', currentOrderDrinkName);
+    notify('🍹 Bestellung angenommen', barComment || `${currentOrderDrinkName} wird zubereitet…`);
     if (!views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
@@ -484,6 +480,7 @@
     currentOrderBarComment = barComment || null;
     updateSavedOrderStatus('rejected', currentOrderBarComment);
     updateWidget('rejected', currentOrderDrinkName);
+    notify('❌ Bestellung abgelehnt', barComment || currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
   });
 
@@ -493,6 +490,7 @@
     currentOrderBarComment = null;
     updateSavedOrderStatus('completed');
     updateWidget('completed', currentOrderDrinkName);
+    notify('🎉 Abholbereit!', `${currentOrderDrinkName} – komm an die Bar!`);
     if (!views.waiting.classList.contains('hidden')) showWaiting('completed');
   });
 
