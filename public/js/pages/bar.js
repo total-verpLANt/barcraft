@@ -105,7 +105,28 @@
   }
 
   // === Rendering ===
+  function saveRejectState() {
+    const state = {};
+    document.querySelectorAll('.reject-expand:not(.hidden)').forEach(el => {
+      const id = el.id.replace('reject-', '');
+      const comment = document.getElementById(`reject-comment-${id}`)?.value || '';
+      state[id] = comment;
+    });
+    return state;
+  }
+
+  function restoreRejectState(state) {
+    Object.entries(state).forEach(([id, comment]) => {
+      const panel = document.getElementById(`reject-${id}`);
+      if (!panel) return;
+      panel.classList.remove('hidden');
+      const input = document.getElementById(`reject-comment-${id}`);
+      if (input && comment) input.value = comment;
+    });
+  }
+
   function renderAll() {
+    const rejectState = saveRejectState();
     const pending = orders.filter(o => o.status === 'pending');
     const accepted = orders.filter(o => o.status === 'accepted');
     const completed = orders
@@ -130,6 +151,7 @@
     document.getElementById('standby-count-badge').textContent = pending.length;
 
     attachCardListeners();
+    restoreRejectState(rejectState);
   }
 
   function renderPendingCard(order) {
