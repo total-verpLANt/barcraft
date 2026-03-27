@@ -469,6 +469,23 @@
     }
   }
 
+  // Guest alert overlay
+  let guestAlertTimeout = null;
+
+  function showGuestAlert(type, drinkName) {
+    const overlay = document.getElementById('guest-alert-overlay');
+    const titles = { completed: '🎉 Abholbereit!', accepted: '🍹 Wird zubereitet…', rejected: '❌ Abgelehnt' };
+    overlay.className = `overlay-${type}`;
+    document.getElementById('guest-alert-title').textContent = titles[type] || '';
+    document.getElementById('guest-alert-drink').textContent = drinkName || '';
+    overlay.style.animation = 'none';
+    void overlay.offsetWidth;
+    overlay.style.animation = 'overlayPulse 6s ease-in-out forwards';
+    clearTimeout(guestAlertTimeout);
+    guestAlertTimeout = setTimeout(() => overlay.classList.add('hidden'), 6000);
+    overlay.onclick = () => { clearTimeout(guestAlertTimeout); overlay.classList.add('hidden'); };
+  }
+
   // Browser notifications (simple, no service worker needed)
   function notify(title, body) {
     if (Notification.permission !== 'granted') return;
@@ -512,6 +529,7 @@
     updateSavedOrderStatus('accepted', currentOrderBarComment);
     updateWidget('accepted', currentOrderDrinkName);
     notify('🍹 Bestellung angenommen', barComment || `${currentOrderDrinkName} wird zubereitet…`);
+    showGuestAlert('accepted', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
@@ -522,6 +540,7 @@
     updateSavedOrderStatus('rejected', currentOrderBarComment);
     updateWidget('rejected', currentOrderDrinkName);
     notify('❌ Bestellung abgelehnt', barComment || currentOrderDrinkName);
+    showGuestAlert('rejected', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
   });
 
@@ -532,6 +551,7 @@
     updateSavedOrderStatus('completed');
     updateWidget('completed', currentOrderDrinkName);
     notify('🎉 Abholbereit!', `${currentOrderDrinkName} – komm an die Bar!`);
+    showGuestAlert('completed', currentOrderDrinkName);
     if (!views.waiting.classList.contains('hidden')) showWaiting('completed');
   });
 
