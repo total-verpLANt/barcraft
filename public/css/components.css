@@ -710,35 +710,71 @@
 }
 
 @media (min-width: 900px) {
+  /* ── Layout ── */
+  .container-wide { max-width: 1200px; padding: 0 2rem; }
+
+  /* ── Page Header ── */
+  .page-header { padding: 1.25rem 0; }
+  .page-title { font-size: 1.625rem; }
+  .badge { font-size: 1rem; padding: .4rem 1rem; }
+
+  /* ── Bar Controls: immer sichtbar, kein Aufklappen nötig ── */
+  #controls-body {
+    display: grid !important;
+    grid-template-columns: auto auto auto 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.125rem 1.5rem;
+  }
+  #controls-arrow { display: none; }
+  #controls-toggle { cursor: default; pointer-events: none; padding: 1rem 1.5rem; font-size: 1.125rem; }
+
+  /* State-Buttons größer und griffiger */
+  #btn-close-bar, #btn-pause-bar, #btn-open-bar {
+    min-height: 60px;
+    font-size: 1.0625rem;
+    padding: .875rem 2rem;
+    min-width: 160px;
+  }
+
+  /* Zeit-Input größer */
+  .time-input-group .input { height: 52px; font-size: 1rem; width: 130px; }
+  .time-input-group .btn { min-height: 52px; font-size: 1rem; }
+
+  /* ── Abschnitt-Überschriften ── */
+  .section-title { font-size: 1.125rem; letter-spacing: .04em; }
+  .badge-count { min-width: 1.875rem; height: 1.875rem; font-size: .9375rem; }
+
+  /* ── Zwei-Spalten Order-Layout ── */
   .bar-columns {
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    gap: 1.75rem;
     align-items: start;
   }
-
   .bar-col .section-header { margin-top: 0; }
 
-  /* Größere Buttons für Touch */
-  .order-actions .btn {
-    min-height: 64px;
-    font-size: 1.125rem;
-    padding: 1rem 1.375rem;
-  }
-
-  /* Größere Karten */
-  .order-card { padding: 1.5rem; }
+  /* ── Order Cards ── */
+  .order-card { padding: 1.5rem; margin-bottom: 1.125rem; }
   .order-name { font-size: 1.375rem; }
   .order-drink { font-size: 1.125rem; }
   .order-meta { font-size: 1rem; }
+  .order-avatar { width: 3rem; height: 3rem; }
+  .order-timer { font-size: 1.0625rem; font-weight: 700; }
 
-  /* Größerer Ready/Abbrechen-Button in accepted cards */
-  .order-card .btn-success,
-  .order-card .btn-danger.btn-sm {
-    min-height: 56px;
-    font-size: 1rem;
-    padding: .875rem 1.25rem;
+  /* ── Accept/Reject-Buttons ── */
+  .order-actions { gap: 1rem; margin-top: 1.125rem; }
+  .order-actions .btn {
+    min-height: 68px;
+    font-size: 1.1875rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
   }
 
-  /* Bar Controls Buttons größer */
-  .bar-controls-body .btn { min-height: 52px; font-size: 1rem; }
+  /* ── Ready/Abbrechen in "In Prep"-Karten ── */
+  .order-card .btn-success,
+  .order-card .btn-danger.btn-sm {
+    min-height: 58px;
+    font-size: 1.0625rem;
+    padding: .875rem 1.375rem;
+  }
 }
