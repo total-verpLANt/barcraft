@@ -15,13 +15,14 @@ async function getOrderById(id) {
   return orders.find(o => o.id === id) || null;
 }
 
-async function createOrder({ userId, userName, drink, quantity }) {
+async function createOrder({ userId, userName, userAvatar, drink, quantity }) {
   const data = await readJson(FILE);
   const orders = data ? data.orders : [];
   const order = {
     id: generateId('ord'),
     userId,
     userName,
+    userAvatar: userAvatar || null,
     drink,
     quantity: quantity || 1,
     status: 'pending',

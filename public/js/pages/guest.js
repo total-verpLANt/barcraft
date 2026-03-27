@@ -76,7 +76,9 @@
       section.classList.remove('hidden');
       list.innerHTML = users.map(u => `
         <div class="user-chip" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.name)}">
-          <span>🎮</span>
+          ${u.avatarDataUrl
+            ? `<img src="${escapeHtml(u.avatarDataUrl)}" class="order-avatar" style="width:1.75rem;height:1.75rem;" alt="">`
+            : '<span>🎮</span>'}
           <span>${escapeHtml(u.name)}</span>
           <span class="user-orders">${u.orderCount} orders</span>
         </div>
@@ -84,7 +86,7 @@
 
       list.querySelectorAll('.user-chip').forEach(chip => {
         chip.addEventListener('click', () => {
-          selectUser({ id: chip.dataset.id, name: chip.dataset.name });
+          selectUser(users.find(u => u.id === chip.dataset.id));
         });
       });
     } else {
@@ -128,10 +130,63 @@
     initOrderForm();
   }
 
+  // === Avatar ===
+  function showAvatarPreview(dataUrl) {
+    const img = document.getElementById('avatar-preview');
+    const placeholder = document.getElementById('avatar-placeholder');
+    if (dataUrl) {
+      img.src = dataUrl;
+      img.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    } else {
+      img.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+    }
+  }
+
+  function resizeImageToDataUrl(file, size = 100) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = url;
+    });
+  }
+
+  document.getElementById('btn-avatar-upload').addEventListener('click', () => {
+    document.getElementById('avatar-file-input').click();
+  });
+
+  document.getElementById('avatar-file-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentUser) return;
+    const dataUrl = await resizeImageToDataUrl(file);
+    showAvatarPreview(dataUrl);
+    await fetch(`/api/users/${currentUser.id}/avatar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarDataUrl: dataUrl }),
+    });
+    currentUser.avatarDataUrl = dataUrl;
+    e.target.value = '';
+  });
+
   // === Order Form ===
   async function initOrderForm() {
     showView('orderForm');
     document.getElementById('display-username').textContent = currentUser.name;
+    showAvatarPreview(currentUser.avatarDataUrl || null);
     quantity = 1;
     selectedDrink = null;
     updateQtyDisplay();

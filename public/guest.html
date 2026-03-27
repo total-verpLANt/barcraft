@@ -63,9 +63,16 @@
   <!-- View 2: Order Form -->
   <div id="view-order-form" class="hidden">
     <div class="flex items-center justify-between mb-2">
-      <h2>Hey, <span id="display-username" class="accent"></span>!</h2>
+      <div class="flex items-center gap-1">
+        <button id="btn-avatar-upload" class="avatar-btn" title="Avatar hochladen">
+          <img id="avatar-preview" class="avatar-img hidden" alt="Avatar">
+          <span id="avatar-placeholder" class="avatar-placeholder">👤</span>
+        </button>
+        <h2>Hey, <span id="display-username" class="accent"></span>!</h2>
+      </div>
       <button class="btn btn-ghost btn-sm" id="btn-switch-user">Switch</button>
     </div>
+    <input type="file" id="avatar-file-input" accept="image/*" class="hidden">
 
     <!-- Bar closed/paused message -->
     <div id="bar-status-msg" class="hidden card mb-2" style="border-color: var(--color-danger);">

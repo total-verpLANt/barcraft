@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const config = require('../../config.json');
 
-const { getUsers, getUserById, createUser } = require('../db/users');
+const { getUsers, getUserById, createUser, updateUser } = require('../db/users');
 const { getDrinks, createDrink, updateDrink, deleteDrink, incrementDrinkOrderCount } = require('../db/drinks');
 const { getOrders, getOrderById, createOrder, updateOrder } = require('../db/orders');
 const { incrementUserOrderCount } = require('../db/users');
@@ -119,6 +119,19 @@ router.get('/orders', async (req, res) => {
   }
 });
 
+router.patch('/users/:id/avatar', async (req, res) => {
+  const { avatarDataUrl } = req.body;
+  if (!avatarDataUrl) return res.status(400).json({ error: 'avatarDataUrl required' });
+  if (!avatarDataUrl.startsWith('data:image/')) return res.status(400).json({ error: 'Invalid image data' });
+  try {
+    const user = await updateUser(req.params.id, { avatarDataUrl });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/orders', async (req, res) => {
   const { userId, userName, drink, quantity } = req.body;
   if (!userId || !drink) return res.status(400).json({ error: 'userId and drink required' });
@@ -133,7 +146,9 @@ router.post('/orders', async (req, res) => {
       return res.status(403).json({ error: 'Bar is paused' });
     }
 
-    const order = await createOrder({ userId, userName, drink, quantity });
+    const user = await getUserById(userId);
+    const userAvatar = user?.avatarDataUrl || null;
+    const order = await createOrder({ userId, userName, userAvatar, drink, quantity });
 
     // Increment counters
     if (!drink.isFreeText && drink.drinkId) {

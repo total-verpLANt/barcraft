@@ -158,9 +158,12 @@
     return `
     <div class="order-card card-accent slide-down" id="order-${escapeHtml(order.id)}">
       <div class="order-card-header">
-        <div>
-          <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-          <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+        <div class="flex items-center gap-1" style="min-width:0;">
+          ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
+          <div>
+            <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
+            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+          </div>
         </div>
         <span class="badge badge-pending">Pending</span>
       </div>
@@ -191,9 +194,12 @@
     return `
     <div class="order-card" id="order-${escapeHtml(order.id)}">
       <div class="order-card-header">
-        <div>
-          <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-          <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+        <div class="flex items-center gap-1" style="min-width:0;">
+          ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
+          <div>
+            <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
+            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+          </div>
         </div>
         <span class="badge badge-accepted">In Prep</span>
       </div>
@@ -298,6 +304,13 @@
 
   function showOrderAlert(order) {
     const overlay = document.getElementById('bar-alert-overlay');
+    const avatarEl = document.getElementById('alert-avatar');
+    if (order.userAvatar) {
+      avatarEl.src = order.userAvatar;
+      avatarEl.classList.remove('hidden');
+    } else {
+      avatarEl.classList.add('hidden');
+    }
     document.getElementById('alert-drink').textContent = order.drink.name;
     document.getElementById('alert-qty').textContent = `× ${order.quantity}`;
     document.getElementById('alert-user').textContent = `von ${order.userName}`;
