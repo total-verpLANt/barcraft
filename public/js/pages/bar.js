@@ -172,7 +172,7 @@
       <div class="flex items-center justify-between mt-1">
         <span class="order-timer ${warnClass}" id="timer-${escapeHtml(order.id)}">⏱ ${elapsed}</span>
         <div class="flex gap-1">
-          <button class="btn btn-danger btn-sm" data-action="cancel-accepted" data-id="${escapeHtml(order.id)}">✕ Abbrechen</button>
+          <button class="btn btn-danger btn-sm" data-action="cancel-accepted" data-id="${escapeHtml(order.id)}" title="Doppelklick zum Abbrechen">✕ Abbrechen</button>
           <button class="btn btn-success" data-action="complete" data-id="${escapeHtml(order.id)}">✓ Ready</button>
         </div>
       </div>
@@ -196,7 +196,8 @@
 
   function attachCardListeners() {
     document.querySelectorAll('[data-action]').forEach(el => {
-      el.addEventListener('click', handleCardAction);
+      const evt = el.dataset.action === 'cancel-accepted' ? 'dblclick' : 'click';
+      el.addEventListener(evt, handleCardAction);
     });
   }
 
