@@ -190,25 +190,45 @@
       return categoryOrder.indexOf(a[0]) - categoryOrder.indexOf(b[0]);
     });
 
+    const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([v, l]) =>
+      `<option value="${v}">${l}</option>`
+    ).join('');
+
     container.innerHTML = sortedGroups.map(([cat, items]) => `
       <p class="category-label">${escapeHtml(CATEGORY_LABELS[cat] || cat)}</p>
       <div class="drink-grid">
         ${items.map(d => `
           <div class="drink-option${selectedDrink && selectedDrink.drinkId === d.id ? ' selected' : ''}"
                data-id="${escapeHtml(d.id)}" data-name="${escapeHtml(d.name)}">
-            ${escapeHtml(d.name)}
+            <span class="drink-option-name">${escapeHtml(d.name)}</span>
+            <select class="drink-cat-edit" data-id="${escapeHtml(d.id)}" title="Kategorie ändern">
+              ${CATEGORY_OPTIONS.replace(`value="${escapeHtml(d.category)}"`, `value="${escapeHtml(d.category)}" selected`)}
+            </select>
           </div>
         `).join('')}
       </div>
     `).join('');
 
     container.querySelectorAll('.drink-option').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.drink-cat-edit')) return;
         selectedDrink = { drinkId: el.dataset.id, name: el.dataset.name, isFreeText: false };
         container.querySelectorAll('.drink-option').forEach(o => o.classList.remove('selected'));
         el.classList.add('selected');
         updateSelectedPreview();
         updateSubmitButton();
+      });
+    });
+
+    container.querySelectorAll('.drink-cat-edit').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        await fetch(`/api/drinks/${sel.dataset.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: sel.value }),
+        });
+        await loadMenu();
       });
     });
   }

@@ -19,6 +19,20 @@
     } catch (err) { console.error(err); }
   }
 
+  const CATEGORIES = [
+    { value: 'soft',     label: 'Soft Drink' },
+    { value: 'energy',   label: 'Energy' },
+    { value: 'beer',     label: 'Bier' },
+    { value: 'cocktail', label: 'Cocktail' },
+    { value: 'other',    label: 'Sonstiges' },
+  ];
+
+  function categoryOptions(selected) {
+    return CATEGORIES.map(c =>
+      `<option value="${c.value}"${c.value === selected ? ' selected' : ''}>${c.label}</option>`
+    ).join('');
+  }
+
   function renderDrinks(drinks) {
     const list = document.getElementById('drinks-list');
     const noMsg = document.getElementById('no-drinks-msg');
@@ -29,12 +43,22 @@
     }
     noMsg.classList.add('hidden');
     list.innerHTML = drinks.map(d => `
-      <div style="display:flex;align-items:center;gap:.375rem;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:.375rem .625rem;">
-        <span style="font-size:.875rem;font-weight:500;">${escapeHtml(d.name)}</span>
+      <div style="display:flex;align-items:center;gap:.5rem;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:.5rem .75rem;">
+        <span style="font-size:.9375rem;font-weight:500;flex:1;">${escapeHtml(d.name)}</span>
+        <select class="select" data-cat-drink="${escapeHtml(d.id)}" style="width:auto;padding:.35rem .5rem;font-size:.875rem;">${categoryOptions(d.category)}</select>
         <button class="btn btn-icon btn-ghost btn-sm" data-delete-drink="${escapeHtml(d.id)}" title="Löschen"
-          style="padding:.15rem .4rem;font-size:.85rem;color:var(--color-danger);min-width:auto;min-height:auto;">✕</button>
+          style="padding:.25rem .5rem;font-size:.9rem;color:var(--color-danger);min-width:auto;">✕</button>
       </div>
     `).join('');
+    list.querySelectorAll('[data-cat-drink]').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        await fetch(`/api/drinks/${sel.dataset.catDrink}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: sel.value }),
+        });
+      });
+    });
     list.querySelectorAll('[data-delete-drink]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm(`Drink "${btn.closest('div').querySelector('span').textContent}" löschen?`)) return;
