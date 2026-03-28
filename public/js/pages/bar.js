@@ -4,8 +4,33 @@
   const { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash } = Utils;
   const socket = SocketClient.getSocket();
 
+  function authJsonHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = window.Auth && Auth.getToken ? Auth.getToken() : null;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }
+
   let orders = [];
   let timerInterval = null;
+
+  function getOrderLines(order) {
+    if (order.items && order.items.length) return order.items;
+    if (order.drink) return [{ drink: order.drink, quantity: order.quantity || 1 }];
+    return [];
+  }
+
+  function renderOrderLinesHtml(order) {
+    return getOrderLines(order)
+      .map((l) => {
+        const ft =
+          l.drink && l.drink.isFreeText
+            ? '<span class="badge-freetext" title="Freie Bestellung (nicht aus dem Menü)">Freitext</span>'
+            : '';
+        return `<div class="order-drink order-drink-line">${ft}<span class="qty">×${l.quantity}</span> ${escapeHtml(l.drink.name)}</div>`;
+      })
+      .join('');
+  }
 
   // Join bar room
   socket.emit('client:bar_join');
@@ -33,6 +58,42 @@
     ).join('');
   }
 
+  (function setupBarAddDrink() {
+    const catSelect = document.getElementById('bar-new-drink-category');
+    if (catSelect) {
+      catSelect.innerHTML = CATEGORIES.map(c =>
+        `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label)}</option>`
+      ).join('');
+    }
+    const nameEl = document.getElementById('bar-new-drink-name');
+    const addBtn = document.getElementById('bar-btn-add-drink');
+    if (!addBtn || !nameEl) return;
+
+    async function submitNewDrink() {
+      const catEl = document.getElementById('bar-new-drink-category');
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      try {
+        const res = await fetch('/api/drinks', {
+          method: 'POST',
+          headers: authJsonHeaders(),
+          body: JSON.stringify({ name, category: catEl.value }),
+        });
+        if (res.ok) {
+          nameEl.value = '';
+          await loadDrinks();
+        } else if (res.status === 401) {
+          alert('Nicht angemeldet – Seite neu laden und Passwort eingeben.');
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    addBtn.addEventListener('click', submitNewDrink);
+    nameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); submitNewDrink(); }
+    });
+  })();
+
   function renderDrinks(drinks) {
     const list = document.getElementById('drinks-list');
     const noMsg = document.getElementById('no-drinks-msg');
@@ -54,7 +115,7 @@
       sel.addEventListener('change', async () => {
         await fetch(`/api/drinks/${sel.dataset.catDrink}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authJsonHeaders(),
           body: JSON.stringify({ category: sel.value }),
         });
       });
@@ -62,7 +123,10 @@
     list.querySelectorAll('[data-delete-drink]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm(`Drink "${btn.closest('div').querySelector('span').textContent}" löschen?`)) return;
-        await fetch(`/api/drinks/${btn.dataset.deleteDrink}`, { method: 'DELETE' });
+        await fetch(`/api/drinks/${btn.dataset.deleteDrink}`, {
+          method: 'DELETE',
+          headers: authJsonHeaders(),
+        });
         await loadDrinks();
       });
     });
@@ -140,7 +204,7 @@
           ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
           <div>
             <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+            ${renderOrderLinesHtml(order)}
           </div>
         </div>
         <span class="badge badge-pending">Pending</span>
@@ -164,7 +228,7 @@
           ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
           <div>
             <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+            ${renderOrderLinesHtml(order)}
           </div>
         </div>
         <span class="badge badge-accepted">In Prep</span>
@@ -187,7 +251,7 @@
       <div class="order-card-header">
         <div>
           <div class="order-name" style="font-size:.9rem;">🎮 ${escapeHtml(order.userName)}</div>
-          <div class="order-drink" style="font-size:.85rem;"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+          <div style="font-size:.85rem;">${renderOrderLinesHtml(order)}</div>
         </div>
         <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Done' : '✗ Rejected'}</span>
       </div>
@@ -263,8 +327,25 @@
     } else {
       avatarEl.classList.add('hidden');
     }
-    document.getElementById('alert-drink').textContent = order.drink.name;
-    document.getElementById('alert-qty').textContent = `× ${order.quantity}`;
+    const lines = getOrderLines(order);
+    const ftHint = document.getElementById('alert-freetext-hint');
+    if (ftHint) {
+      const anyFree = lines.some((l) => l.drink && l.drink.isFreeText);
+      ftHint.classList.toggle('hidden', !anyFree);
+    }
+    if (lines.length === 0) {
+      document.getElementById('alert-drink').textContent = order.drink?.name || '';
+      document.getElementById('alert-qty').textContent = '';
+    } else {
+      const shown = lines
+        .slice(0, 3)
+        .map((l) => `${l.quantity}× ${l.drink.name}`)
+        .join(' · ');
+      document.getElementById('alert-drink').textContent =
+        lines.length > 3 ? `${shown} …` : shown;
+      document.getElementById('alert-qty').textContent =
+        lines.length > 1 ? `${lines.length} Positionen` : `× ${lines[0].quantity}`;
+    }
     document.getElementById('alert-user').textContent = `von ${order.userName}`;
     overlay.classList.remove('hidden');
     overlay.style.animation = 'none';

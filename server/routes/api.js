@@ -12,6 +12,8 @@ const { getStats } = require('../db/stats');
 const { readJson, writeJson } = require('../db/fileDb');
 const { ORDER_STATUS, SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { sendPushToUser } = require('../utils/pushNotifications');
+const { formatOrderSummary } = require('../utils/orderHelpers');
+const { containsProfanity } = require('../utils/profanityCheck');
 
 let _io = null;
 let _userSocketMap = null;
@@ -33,6 +35,26 @@ async function broadcastStats() {
   if (!_io) return;
   const stats = await getStats();
   _io.emit(SOCKET_EVENTS.STATS_UPDATED, { stats });
+}
+
+function verifyBarToken(req) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return false;
+  const token = auth.slice(7);
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const password = decoded.split(':')[0];
+    return password === config.password;
+  } catch {
+    return false;
+  }
+}
+
+function requireBarAuth(req, res, next) {
+  if (!verifyBarToken(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
 }
 
 // --- Auth ---
@@ -78,7 +100,7 @@ router.get('/drinks', async (req, res) => {
   }
 });
 
-router.post('/drinks', async (req, res) => {
+router.post('/drinks', requireBarAuth, async (req, res) => {
   const { name, category } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
   try {
@@ -89,7 +111,7 @@ router.post('/drinks', async (req, res) => {
   }
 });
 
-router.patch('/drinks/:id', async (req, res) => {
+router.patch('/drinks/:id', requireBarAuth, async (req, res) => {
   try {
     const drink = await updateDrink(req.params.id, req.body);
     if (!drink) return res.status(404).json({ error: 'Drink not found' });
@@ -99,7 +121,7 @@ router.patch('/drinks/:id', async (req, res) => {
   }
 });
 
-router.delete('/drinks/:id', async (req, res) => {
+router.delete('/drinks/:id', requireBarAuth, async (req, res) => {
   try {
     const ok = await deleteDrink(req.params.id);
     if (!ok) return res.status(404).json({ error: 'Drink not found' });
@@ -132,9 +154,23 @@ router.patch('/users/:id/avatar', async (req, res) => {
   }
 });
 
+router.get('/users/:id/orders', async (req, res) => {
+  try {
+    const orders = await getOrders();
+    const mine = orders
+      .filter((o) => o.userId === req.params.id)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ orders: mine });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/orders', async (req, res) => {
-  const { userId, userName, drink, quantity } = req.body;
-  if (!userId || !drink) return res.status(400).json({ error: 'userId and drink required' });
+  const { userId, userName, items, drink, quantity } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  const hasItems = items && Array.isArray(items) && items.length > 0;
+  if (!hasItems && !drink) return res.status(400).json({ error: 'items or drink required' });
 
   try {
     // Check bar state
@@ -146,13 +182,33 @@ router.post('/orders', async (req, res) => {
       return res.status(403).json({ error: 'Bar is paused' });
     }
 
+    const freeTexts = [];
+    if (hasItems) {
+      for (const line of items) {
+        if (line.drink && line.drink.isFreeText && line.drink.name) {
+          freeTexts.push(line.drink.name);
+        }
+      }
+    } else if (drink && drink.isFreeText && drink.name) {
+      freeTexts.push(drink.name);
+    }
+    for (const text of freeTexts) {
+      if (containsProfanity(text)) {
+        return res.status(400).json({
+          error: 'Freie Bestellung enthält unzulässige Wörter. Bitte neutral formulieren.',
+        });
+      }
+    }
+
     const user = await getUserById(userId);
     const userAvatar = user?.avatarDataUrl || null;
-    const order = await createOrder({ userId, userName, userAvatar, drink, quantity });
+    const order = await createOrder({ userId, userName, userAvatar, items, drink, quantity });
 
-    // Increment counters
-    if (!drink.isFreeText && drink.drinkId) {
-      await incrementDrinkOrderCount(drink.drinkId);
+    // Increment drink stats per line (menu items only)
+    for (const line of order.items) {
+      if (!line.drink.isFreeText && line.drink.drinkId) {
+        await incrementDrinkOrderCount(line.drink.drinkId, line.quantity);
+      }
     }
     await incrementUserOrderCount(userId);
 
@@ -162,7 +218,9 @@ router.post('/orders', async (req, res) => {
     await broadcastStats();
     res.status(201).json({ order });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const msg = err.message || String(err);
+    const code = msg.includes('Too many') ? 400 : 500;
+    res.status(code).json({ error: msg });
   }
 });
 
@@ -208,13 +266,14 @@ router.patch('/orders/:id', async (req, res) => {
     if (guestEvent) {
       emitToGuest(order.userId, guestEvent, { orderId: order.id, barComment: order.barComment });
       // Send push notification as fallback
+      const summary = formatOrderSummary(order);
       const pushPayload = {
         title: 'Barcraft',
         body: status === ORDER_STATUS.ACCEPTED
-          ? `Your order of ${order.drink.name} was accepted!`
+          ? `${summary} – angenommen!`
           : status === ORDER_STATUS.REJECTED
-          ? `Your order was rejected. ${order.barComment || ''}`
-          : `Your ${order.drink.name} is ready! Come pick it up.`,
+          ? `Bestellung abgelehnt. ${order.barComment || ''}`
+          : `${summary} ist abholbereit!`,
         orderId: order.id,
         status,
       };

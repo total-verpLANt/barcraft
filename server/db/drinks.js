@@ -41,12 +41,13 @@ async function updateDrink(id, updates) {
   return drinks[idx];
 }
 
-async function incrementDrinkOrderCount(drinkId) {
+async function incrementDrinkOrderCount(drinkId, delta = 1) {
   const data = await readJson(FILE);
   if (!data) return;
   const idx = data.drinks.findIndex(d => d.id === drinkId);
   if (idx !== -1) {
-    data.drinks[idx].orderCount = (data.drinks[idx].orderCount || 0) + 1;
+    const add = Math.max(0, Number(delta) || 0);
+    data.drinks[idx].orderCount = (data.drinks[idx].orderCount || 0) + add;
     await writeJson(FILE, data);
   }
 }

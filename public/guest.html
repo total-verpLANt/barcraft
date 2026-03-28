@@ -87,63 +87,53 @@
     </div>
 
     <div class="tabs" id="order-tabs">
-      <button class="tab active" data-tab="menu">Menu</button>
-      <button class="tab" data-tab="add-drink">Add Drink</button>
-      <button class="tab" data-tab="free-text">Free Text</button>
-      <button class="tab" data-tab="edit-drink">Edit Drink</button>
+      <button type="button" class="tab active" data-tab="menu">Menü</button>
+      <button type="button" class="tab" data-tab="free-text">Freie Bestellung</button>
     </div>
 
-    <!-- Tab: Menu -->
+    <!-- Tab: Menu (vom Bar-Modus gepflegt) -->
     <div id="tab-menu">
       <div id="drink-menu"></div>
     </div>
 
-    <!-- Tab: Add Drink -->
-    <div id="tab-add-drink" class="hidden">
-      <div class="form-group">
-        <label class="label" for="new-drink-name">Drink name</label>
-        <input class="input" type="text" id="new-drink-name" placeholder="e.g. Bionade Ingwer" maxlength="60" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="label" for="new-drink-category">Category</label>
-        <select class="select" id="new-drink-category">
-          <option value="soft">Soft Drink</option>
-          <option value="energy">Energy</option>
-          <option value="beer">Beer</option>
-          <option value="cocktail">Cocktail</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <button class="btn btn-secondary btn-full" id="btn-add-drink">Add to Menu & Select</button>
-    </div>
-
-    <!-- Tab: Edit Drink -->
-    <div id="tab-edit-drink" class="hidden">
-      <div id="edit-drink-list"></div>
-    </div>
-
-    <!-- Tab: Free Text -->
+    <!-- Tab: Freie Bestellung (nicht im Menü; z. B. Wasser mit Eis) -->
     <div id="tab-free-text" class="hidden">
       <div class="form-group">
-        <label class="label" for="free-text-input">Describe your order</label>
-        <input class="input" type="text" id="free-text-input" placeholder="e.g. A glass of water with ice" maxlength="100" autocomplete="off">
+        <label class="label" for="free-text-input">Was darf es sein?</label>
+        <input class="input" type="text" id="free-text-input" placeholder="z. B. Wasser mit Eis" maxlength="100" autocomplete="off">
       </div>
-      <p class="text-muted">This won't be added to the menu.</p>
+      <p class="text-muted">Landet als eigene Position im Warenkorb, nicht im Menü.</p>
+      <p id="free-text-policy" class="text-muted" style="font-size:.8rem;margin-top:.5rem;margin-bottom:0;">Keine Beleidigungen oder unangemessenen Ausdrücke.</p>
     </div>
 
-    <div class="card mt-2" style="background: var(--color-bg);">
-      <div class="flex items-center justify-between mb-1">
-        <span class="label" style="margin:0;">Quantity</span>
+    <div class="card mt-2 cart-builder" style="background: var(--color-bg);">
+      <span class="label" style="margin-bottom:0.5rem;display:block;">Menge für diese Position</span>
+      <div class="flex items-center justify-between gap-1 flex-wrap">
         <div class="qty-control">
-          <button class="qty-btn" id="qty-minus">−</button>
-          <span class="qty-value" id="qty-display">1</span>
-          <button class="qty-btn" id="qty-plus">+</button>
+          <button type="button" class="qty-btn" id="line-qty-minus" aria-label="Menge verringern">−</button>
+          <span class="qty-value" id="line-qty-display">1</span>
+          <button type="button" class="qty-btn" id="line-qty-plus" aria-label="Menge erhöhen">+</button>
         </div>
+        <button type="button" class="btn btn-secondary" id="btn-add-to-cart" disabled>In den Warenkorb</button>
       </div>
-      <div id="selected-drink-preview" class="text-muted" style="font-size:.875rem;"></div>
+      <p id="selection-hint" class="text-muted mt-1" style="font-size:.8125rem;margin-bottom:0;">Wähle ein Getränk aus dem Menü oder „Freie Bestellung“.</p>
     </div>
 
-    <button class="btn btn-primary btn-full mt-2" id="btn-submit-order" disabled>Order Now</button>
+    <div class="cart-panel card mt-2" id="cart-panel">
+      <div class="cart-panel-header flex items-center justify-between mb-1">
+        <span class="label" style="margin:0;">Warenkorb</span>
+        <span id="cart-badge" class="badge-count hidden" aria-hidden="true">0</span>
+      </div>
+      <p id="cart-empty" class="text-muted" style="font-size:.875rem;margin:0;">Noch keine Artikel.</p>
+      <ul class="cart-lines" id="cart-lines"></ul>
+      <div class="cart-footer">
+        <div class="flex items-center justify-between mb-1 mt-2">
+          <span class="text-muted" style="font-size:.875rem;">Zwischensumme</span>
+          <span id="cart-subtotal" class="cart-subtotal">0 Artikel</span>
+        </div>
+        <button type="button" class="btn btn-primary btn-full" id="btn-checkout" disabled>Jetzt bestellen</button>
+      </div>
+    </div>
   </div>
 
   <!-- View 3: Waiting -->
@@ -160,6 +150,21 @@
     <button class="btn btn-secondary btn-full mt-3" id="btn-order-again">Order Again</button>
   </div>
 
+  <section class="order-history card mt-2 hidden" id="order-history-section" aria-labelledby="order-history-heading">
+    <div class="order-history-header">
+      <h3 id="order-history-heading" class="order-history-title">Meine Bestellungen</h3>
+    </div>
+    <p id="order-history-empty" class="text-muted hidden" style="margin:0;">Noch keine Bestellungen.</p>
+    <div id="order-history-open-block" class="hidden">
+      <p class="order-history-subtitle">Offen</p>
+      <ul class="order-history-list" id="order-history-open"></ul>
+    </div>
+    <div id="order-history-done-block" class="hidden">
+      <p class="order-history-subtitle">Abgeschlossen</p>
+      <ul class="order-history-list" id="order-history-done"></ul>
+    </div>
+  </section>
+
 </div>
 
 <!-- Floating order status widget -->
@@ -169,6 +174,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/utils.js"></script>
+<script src="/js/profanity-check.js"></script>
 <script src="/js/socket-client.js"></script>
 <script src="/js/push-client.js"></script>
 <script src="/js/auth.js"></script>
