@@ -1,7 +1,7 @@
 'use strict';
 
 (async function () {
-  const { escapeHtml, groupBy, triggerFlash } = Utils;
+  const { escapeHtml, groupBy, triggerFlash, getOrderLines } = Utils;
   const socket = SocketClient.getSocket();
 
   const CATEGORY_LABELS = {
@@ -17,7 +17,6 @@
   let lineQty = 1;
   /** Warenkorb-Positionen vor dem Absenden */
   let cart = []; // { drink, quantity }[]
-  /** Nur offene Bestellungen (pending/accepted); synchron zu API + „Meine Bestellungen“. */
   let activeOrders = []; // { orderId, drinkName, status, barComment }
   let waitingOrderId = null; // Bestellung die in der Waiting-View angezeigt wird
   let barState = { status: 'open' };
@@ -34,14 +33,8 @@
     return !bad;
   }
 
-  function getClientOrderLines(order) {
-    if (order.items && order.items.length) return order.items;
-    if (order.drink) return [{ drink: order.drink, quantity: order.quantity || 1 }];
-    return [];
-  }
-
   function orderSummaryForWidget(order) {
-    const lines = getClientOrderLines(order);
+    const lines = getOrderLines(order);
     if (lines.length === 0) return 'Bestellung';
     if (lines.length === 1) {
       const l = lines[0];
@@ -51,7 +44,7 @@
   }
 
   function orderHasFreeText(order) {
-    return getClientOrderLines(order).some((l) => l.drink && l.drink.isFreeText);
+    return getOrderLines(order).some((l) => l.drink && l.drink.isFreeText);
   }
 
   function loadCart() {
@@ -132,7 +125,7 @@
         .join('');
     }
     const sub = document.getElementById('cart-subtotal');
-    if (sub) sub.textContent = `${total} ${total === 1 ? 'Artikel' : 'Artikel'}`;
+    if (sub) sub.textContent = `${total} Artikel`;
     updateCheckoutButton();
     saveCart();
   }
@@ -160,7 +153,7 @@
     const barClosed = barState.status === 'closed' || barState.status === 'paused';
     btn.disabled = total === 0 || barClosed;
     btn.textContent =
-      total > 0 ? `Jetzt bestellen (${total} ${total === 1 ? 'Artikel' : 'Artikel'})` : 'Jetzt bestellen';
+      total > 0 ? `Jetzt bestellen (${total} Artikel)` : 'Jetzt bestellen';
   }
 
   function updateSelectionHint() {
@@ -193,6 +186,16 @@
     localStorage.removeItem(ORDER_KEY);
   }
 
+  function loadActiveOrders() {
+    try {
+      const s = localStorage.getItem(ORDER_KEY);
+      const data = s ? JSON.parse(s) : null;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+
   // Views
   const views = {
     userSelect: document.getElementById('view-user-select'),
@@ -200,101 +203,9 @@
     waiting: document.getElementById('view-waiting'),
   };
 
-  const HISTORY_STATUS_LABELS = {
-    pending: { label: 'Warteschlange', className: 'pending' },
-    accepted: { label: 'In Zubereitung', className: 'accepted' },
-    completed: { label: 'Abgeholt', className: 'completed' },
-    rejected: { label: 'Abgelehnt', className: 'rejected' },
-  };
-
-  function formatOrderHistoryTime(iso) {
-    try {
-      return new Date(iso).toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return '';
-    }
-  }
-
-  function renderOrderHistoryItem(order) {
-    const st = HISTORY_STATUS_LABELS[order.status] || HISTORY_STATUS_LABELS.pending;
-    const lines = getClientOrderLines(order);
-    const linesHtml = lines
-      .map((l) => {
-        const qtyP = l.quantity > 1 ? `<span class="order-history-qty">${l.quantity}× </span>` : '';
-        const ft =
-          l.drink && l.drink.isFreeText
-            ? '<span class="badge-freetext">Freitext</span> '
-            : '';
-        return `<div class="order-history-drink order-history-drink-line">${ft}${qtyP}${escapeHtml(l.drink.name)}</div>`;
-      })
-      .join('');
-    let extraMeta = '';
-    if (order.barComment && (order.status === 'rejected' || order.status === 'accepted')) {
-      extraMeta = `<div class="order-history-meta">${escapeHtml(order.barComment)}</div>`;
-    }
-    return `<li class="order-history-item">
-      <div class="order-history-item-main">
-        ${linesHtml}
-        <div class="order-history-meta">${escapeHtml(formatOrderHistoryTime(order.createdAt))}</div>
-        ${extraMeta}
-      </div>
-      <span class="order-history-status ${st.className}">${escapeHtml(st.label)}</span>
-    </li>`;
-  }
-
-  function updateHistoryVisibility() {
-    const el = document.getElementById('order-history-section');
-    if (!el) return;
-    const onUserSelect = views.userSelect && !views.userSelect.classList.contains('hidden');
-    el.classList.toggle('hidden', !currentUser || onUserSelect);
-  }
-
-  async function refreshOrderHistory() {
-    if (!currentUser) return;
-    const openEl = document.getElementById('order-history-open');
-    const doneEl = document.getElementById('order-history-done');
-    const emptyEl = document.getElementById('order-history-empty');
-    const openBlock = document.getElementById('order-history-open-block');
-    const doneBlock = document.getElementById('order-history-done-block');
-    if (!openEl || !doneEl || !emptyEl || !openBlock || !doneBlock) return;
-    try {
-      const res = await fetch(`/api/users/${encodeURIComponent(currentUser.id)}/orders`);
-      const data = await res.json();
-      const orders = data.orders || [];
-      const openStatuses = ['pending', 'accepted'];
-      const openOrders = orders.filter(o => openStatuses.includes(o.status));
-      const doneOrders = orders.filter(o => !openStatuses.includes(o.status));
-
-      activeOrders = openOrders.map((order) => ({
-        orderId: order.id,
-        drinkName: orderSummaryForWidget(order),
-        hasFreeText: orderHasFreeText(order),
-        status: order.status,
-        barComment: order.barComment || null,
-      }));
-      saveActiveOrders();
-      updateWidget();
-
-      emptyEl.classList.toggle('hidden', orders.length > 0);
-      openBlock.classList.toggle('hidden', openOrders.length === 0);
-      doneBlock.classList.toggle('hidden', doneOrders.length === 0);
-      doneBlock.classList.toggle('order-history-divider', openOrders.length > 0 && doneOrders.length > 0);
-      openEl.innerHTML = openOrders.map(renderOrderHistoryItem).join('');
-      doneEl.innerHTML = doneOrders.map(renderOrderHistoryItem).join('');
-    } catch {
-      /* keep list as-is */
-    }
-  }
-
   function showView(name) {
     Object.values(views).forEach(v => v.classList.add('hidden'));
     views[name].classList.remove('hidden');
-    updateHistoryVisibility();
   }
 
   // === User Select ===
@@ -435,7 +346,6 @@
     await loadMenu();
     await loadBarState();
     setupPushBanner();
-    await refreshOrderHistory();
   }
 
   async function loadBarState() {
@@ -623,9 +533,17 @@
       });
       if (res.ok) {
         const { order } = await res.json();
+        activeOrders.push({
+          orderId: order.id,
+          drinkName: orderSummaryForWidget(order),
+          hasFreeText: orderHasFreeText(order),
+          status: 'pending',
+          barComment: null,
+        });
         waitingOrderId = order.id;
         clearCart();
-        await refreshOrderHistory();
+        saveActiveOrders();
+        updateWidget();
         showWaiting('pending');
       } else {
         const err = await res.json();
@@ -657,7 +575,10 @@
   });
 
   document.getElementById('btn-order-again').addEventListener('click', () => {
+    activeOrders = activeOrders.filter((o) => o.status === 'pending' || o.status === 'accepted');
     waitingOrderId = null;
+    saveActiveOrders();
+    updateWidget();
     initOrderForm();
   });
 
@@ -665,6 +586,8 @@
   const WIDGET_CONFIG = {
     pending:   { icon: '⏳', label: 'In der Warteschlange' },
     accepted:  { icon: '🍹', label: 'Wird zubereitet…' },
+    rejected:  { icon: '❌', label: 'Abgelehnt' },
+    completed: { icon: '🎉', label: 'Abholbereit!' },
   };
 
   function updateWidget() {
@@ -706,13 +629,13 @@
 
     if (type === 'pending') {
       icon.textContent = '⏳';
-      title.textContent = 'Order Sent!';
-      desc.textContent = 'Your order is in the queue. The bartender will get to it shortly.';
+      title.textContent = 'Bestellung gesendet!';
+      desc.textContent = 'Deine Bestellung ist in der Warteschlange.';
       commentBox.classList.add('hidden');
     } else if (type === 'accepted') {
       icon.textContent = '🍹';
-      title.textContent = 'Order Accepted!';
-      desc.textContent = "Hang tight! Your drink is being prepared.";
+      title.textContent = 'Bestellung angenommen!';
+      desc.textContent = 'Dein Getränk wird gerade zubereitet.';
       triggerFlash(card, 'accepted');
       if (barComment) {
         commentBox.classList.remove('hidden');
@@ -720,8 +643,8 @@
       }
     } else if (type === 'rejected') {
       icon.textContent = '😢';
-      title.textContent = 'Order Rejected';
-      desc.textContent = "Your order couldn't be fulfilled.";
+      title.textContent = 'Bestellung abgelehnt';
+      desc.textContent = 'Deine Bestellung konnte nicht erfüllt werden.';
       triggerFlash(card, 'rejected');
       if (barComment) {
         commentBox.classList.remove('hidden');
@@ -729,8 +652,8 @@
       }
     } else if (type === 'completed') {
       icon.textContent = '🎉';
-      title.textContent = 'Ready to Collect!';
-      desc.textContent = 'Your drink is ready! Come pick it up at the bar.';
+      title.textContent = 'Abholbereit!';
+      desc.textContent = 'Dein Getränk ist fertig. Komm an die Bar.';
       card.classList.add('celebrate');
       setTimeout(() => card.classList.remove('celebrate'), 600);
       triggerFlash(card, 'completed');
@@ -791,48 +714,53 @@
   });
 
   // === Socket events ===
-  async function fetchOrderSummaryLabel(orderId) {
-    try {
-      const r = await fetch(`/api/orders/${encodeURIComponent(orderId)}`);
-      const j = await r.json();
-      const o = j.order;
-      if (!o) return null;
-      return orderSummaryForWidget(o);
-    } catch {
-      return null;
-    }
-  }
-
-  socket.on('guest:order_accepted', async ({ orderId, barComment }) => {
-    const before = activeOrders.find(o => o.orderId === orderId);
-    await refreshOrderHistory();
-    const after = activeOrders.find(o => o.orderId === orderId);
-    const drinkName = before?.drinkName || after?.drinkName || (await fetchOrderSummaryLabel(orderId)) || 'Getränk';
+  socket.on('guest:order_accepted', ({ orderId, barComment }) => {
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'accepted';
+    order.barComment = barComment || null;
+    saveActiveOrders();
+    updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'accepted');
-    notify('🍹 Bestellung angenommen', barComment || `${drinkName} wird zubereitet…`);
-    showGuestAlert('accepted', drinkName);
+    notify('🍹 Bestellung angenommen', barComment || `${order.drinkName} wird zubereitet…`);
+    showGuestAlert('accepted', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
-  socket.on('guest:order_rejected', async ({ orderId, barComment }) => {
-    const before = activeOrders.find(o => o.orderId === orderId);
-    let drinkName = before?.drinkName;
+  function scheduleOrderRemoval(orderId) {
+    setTimeout(() => {
+      activeOrders = activeOrders.filter((o) => o.orderId !== orderId);
+      saveActiveOrders();
+      updateWidget();
+    }, 10000);
+  }
+
+  socket.on('guest:order_rejected', ({ orderId, barComment }) => {
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'rejected';
+    order.barComment = barComment || null;
+    saveActiveOrders();
+    updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'rejected');
-    await refreshOrderHistory();
-    if (!drinkName) drinkName = (await fetchOrderSummaryLabel(orderId)) || 'Getränk';
-    notify('❌ Bestellung abgelehnt', barComment || drinkName);
-    showGuestAlert('rejected', drinkName);
+    notify('❌ Bestellung abgelehnt', barComment || order.drinkName);
+    showGuestAlert('rejected', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
+    scheduleOrderRemoval(orderId);
   });
 
-  socket.on('guest:order_completed', async ({ orderId }) => {
-    const before = activeOrders.find(o => o.orderId === orderId);
-    const drinkName = before?.drinkName || (await fetchOrderSummaryLabel(orderId)) || 'Getränk';
+  socket.on('guest:order_completed', ({ orderId }) => {
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'completed';
+    order.barComment = null;
+    saveActiveOrders();
+    updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'completed');
-    await refreshOrderHistory();
-    notify('🎉 Abholbereit!', `${drinkName} – komm an die Bar!`);
-    showGuestAlert('completed', drinkName);
+    notify('🎉 Abholbereit!', `${order.drinkName} – komm an die Bar!`);
+    showGuestAlert('completed', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('completed');
+    scheduleOrderRemoval(orderId);
   });
 
   socket.on('global:bar_state_changed', (state) => {
@@ -855,6 +783,9 @@
     currentUser = savedUser;
     socket.emit('client:guest_join', { userId: savedUser.id });
     await initOrderForm();
+    activeOrders = loadActiveOrders().filter((o) => o.status === 'pending' || o.status === 'accepted');
+    saveActiveOrders();
+    updateWidget();
   } else {
     initUserSelect();
   }

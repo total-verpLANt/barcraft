@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-  const { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash } = Utils;
+  const { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash, getOrderLines } = Utils;
   const socket = SocketClient.getSocket();
 
   function authJsonHeaders() {
@@ -13,12 +13,6 @@
 
   let orders = [];
   let timerInterval = null;
-
-  function getOrderLines(order) {
-    if (order.items && order.items.length) return order.items;
-    if (order.drink) return [{ drink: order.drink, quantity: order.quantity || 1 }];
-    return [];
-  }
 
   function renderOrderLinesHtml(order) {
     return getOrderLines(order)
@@ -207,7 +201,7 @@
             ${renderOrderLinesHtml(order)}
           </div>
         </div>
-        <span class="badge badge-pending">Pending</span>
+        <span class="badge badge-pending">Offen</span>
       </div>
       <div class="order-meta">${formatRelativeTime(order.createdAt)}</div>
       <div class="order-actions">
@@ -231,7 +225,7 @@
             ${renderOrderLinesHtml(order)}
           </div>
         </div>
-        <span class="badge badge-accepted">In Prep</span>
+        <span class="badge badge-accepted">In Zubereitung</span>
       </div>
       <div class="flex items-center justify-between mt-1">
         <span class="order-timer ${warnClass}" id="timer-${escapeHtml(order.id)}">⏱ ${elapsed}</span>
@@ -253,7 +247,7 @@
           <div class="order-name" style="font-size:.9rem;">🎮 ${escapeHtml(order.userName)}</div>
           <div style="font-size:.85rem;">${renderOrderLinesHtml(order)}</div>
         </div>
-        <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Done' : '✗ Rejected'}</span>
+        <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Fertig' : '✗ Abgelehnt'}</span>
       </div>
     </div>`;
   }

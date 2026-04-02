@@ -154,18 +154,6 @@ router.patch('/users/:id/avatar', async (req, res) => {
   }
 });
 
-router.get('/users/:id/orders', async (req, res) => {
-  try {
-    const orders = await getOrders();
-    const mine = orders
-      .filter((o) => o.userId === req.params.id)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    res.json({ orders: mine });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.post('/orders', async (req, res) => {
   const { userId, userName, items, drink, quantity } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -204,10 +192,10 @@ router.post('/orders', async (req, res) => {
     const userAvatar = user?.avatarDataUrl || null;
     const order = await createOrder({ userId, userName, userAvatar, items, drink, quantity });
 
-    // Increment drink stats per line (menu items only)
+    // Keep orderCount semantics as "number of orders", not "pieces".
     for (const line of order.items) {
       if (!line.drink.isFreeText && line.drink.drinkId) {
-        await incrementDrinkOrderCount(line.drink.drinkId, line.quantity);
+        await incrementDrinkOrderCount(line.drink.drinkId);
       }
     }
     await incrementUserOrderCount(userId);

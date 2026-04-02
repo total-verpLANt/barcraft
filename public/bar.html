@@ -92,11 +92,11 @@
   <!-- Standby -->
   <div id="bar-standby" class="hidden status-card">
     <div class="status-icon">🟢</div>
-    <h2>Bar is Open</h2>
-    <p class="text-muted mt-1">Waiting for orders…</p>
+    <h2>Bar ist offen</h2>
+    <p class="text-muted mt-1">Warte auf Bestellungen…</p>
     <div id="standby-pending-count" class="hidden mt-2">
       <span class="badge-count pulse-dot" id="standby-count-badge">0</span>
-      <span class="text-muted" style="margin-left:.5rem;">pending orders</span>
+      <span class="text-muted" style="margin-left:.5rem;">offene Bestellungen</span>
     </div>
   </div>
 
@@ -107,26 +107,26 @@
       <!-- Pending -->
       <div class="bar-col">
         <div class="section-header">
-          <span class="section-title">Pending</span>
+          <span class="section-title">Offen</span>
           <span class="badge-count" id="pending-count">0</span>
         </div>
         <div id="pending-orders"></div>
-        <p id="no-pending" class="text-muted" style="margin-bottom:1rem;">No pending orders</p>
+        <p id="no-pending" class="text-muted" style="margin-bottom:1rem;">Keine offenen Bestellungen</p>
       </div>
 
       <!-- Accepted/In-Prep -->
       <div class="bar-col">
         <div class="section-header">
-          <span class="section-title">In Preparation</span>
+          <span class="section-title">In Zubereitung</span>
         </div>
         <div id="accepted-orders"></div>
-        <p id="no-accepted" class="text-muted" style="margin-bottom:1rem;">Nothing in prep</p>
+        <p id="no-accepted" class="text-muted" style="margin-bottom:1rem;">Nichts in Zubereitung</p>
       </div>
     </div>
 
     <!-- Completed (last 3) -->
     <div class="section-header mt-2">
-      <span class="section-title">Recently Completed</span>
+      <span class="section-title">Zuletzt abgeschlossen</span>
     </div>
     <div id="completed-orders"></div>
 
