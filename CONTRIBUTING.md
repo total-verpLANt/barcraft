@@ -1,6 +1,6 @@
 # Contributing to Barcraft
 
-Projekt-Übersicht, Tech Stack und Dateistruktur findest du in der [README](README.md). Dieses Dokument beschreibt die Konventionen für alle Contributors — Mensch und AI.
+Project overview, tech stack, and file structure live in the [README](README.md). This document describes conventions for all contributors — human and AI.
 
 ## Conventions
 
@@ -64,17 +64,55 @@ chore: bump nodemon devDependency
 
 ## Pull requests
 
-**Scope**
+### Atomic changes
 
-- **One logical change** per PR when practical (easier review, safer revert). If you must bundle, say so in the description.
-- **Rebase or merge** from the target branch (`master`) so the diff stays current; resolve conflicts before requesting review.
+Every PR must represent **one logical change**. This is the single most important rule.
 
-**Title**
+**What counts as one change:**
+- A single feature (e.g. cart checkout flow)
+- A bug fix and its minimal test
+- A refactoring that enables a future feature (but not the feature itself)
+- A translation pass across files
+- A CSS/a11y cleanup
+
+**What does NOT belong in one PR:**
+- Feature + translation + CSS cleanup + new middleware
+- Refactoring mixed into a feature branch
+- Unrelated fixes tacked on because "I was in the file anyway"
+
+**When in doubt, split.** Four small PRs that each take 5 minutes to review are better than one large PR that takes an hour and still gets things missed.
+
+### Size guidelines
+
+These are signals, not hard rules — a 400-line CSS file is simpler than 150 lines scattered across server logic, socket handlers, and three HTML templates.
+
+| Metric | Green | Amber — justify in description | Red — split first |
+|--------|-------|-------------------------------|-------------------|
+| Changed lines | < 300 | 300–500 | > 500 |
+| Files touched | ≤ 6 | 7–10 | > 10 |
+| Layers crossed | ≤ 2 (e.g. API + client) | 3 | 4+ |
+
+### How to split
+
+Common splits that keep PRs atomic:
+
+1. **Prep refactoring** → separate PR, merge first, then build the feature on top
+2. **New middleware / auth** → own PR, then the feature that uses it
+3. **Translations / i18n** → own PR (touches many files but zero logic risk)
+4. **CSS / a11y cleanup** → own PR (visual-only, easy to review)
+5. **Data model changes** → own PR with migration notes, then the UI that consumes them
+
+### Branch hygiene
+
+- **Rebase** onto `master` before requesting review — keep the diff current and conflict-free.
+- Use **draft PRs** for work in progress; switch to **ready for review** only when the checklist below is done.
+
+### Title
 
 - Should read like a **clear outcome**: e.g. `Add quantity stepper to guest cart` or `fix: bar overlay closes on outside tap`.
 - Match the **main commit** if the PR is a single commit; otherwise summarize the whole set.
 
-**Description — include when relevant**
+### Description — include when relevant
 
 - **Context:** what problem this solves (or link `Fixes #123` / `Refs #123`).
 - **What changed:** bullet list by area (server / guest UI / bar UI) — not a file-by-file dump unless huge.
@@ -82,12 +120,9 @@ chore: bump nodemon devDependency
 - **UI changes:** **screenshots or short screen recording** for layout/visual work.
 - **Risks / follow-ups:** socket behavior, data migration, known limitations.
 
-**Before opening / marking ready**
+### Before opening / marking ready
 
+- [ ] **Scope check:** this PR does exactly one thing — if you can describe two unrelated changes, split.
 - [ ] Diff is **self-reviewed** (debug `console.log`, commented-out code, accidental `config.json` edits removed).
 - [ ] **Smoke-tested** paths touched (see Testing above).
 - [ ] **Commit messages** on the branch follow the commit guidelines above.
-
-**Draft PRs**
-
-- Use **draft** until tests pass and description is filled in; switch to **ready for review** when you want feedback.
