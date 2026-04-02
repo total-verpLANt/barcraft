@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leaderboard – Barcraft</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/animations.css">
@@ -18,7 +20,8 @@
     <p>Enter the bar password to continue</p>
     <form id="password-form">
       <div class="form-group">
-        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+        <label class="sr-only" for="barcraft-password">Password</label>
+        <input id="barcraft-password" class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
       </div>
       <button class="btn btn-primary btn-full" type="submit">Enter</button>
       <p id="auth-error" class="auth-error"></p>
@@ -33,7 +36,7 @@
   </div>
 </div>
 
-<div class="container-wide" style="padding-bottom:2rem;">
+<div class="container-wide container--page-bottom">
 
   <!-- Stat cards -->
   <div class="stat-grid" id="stat-grid">
@@ -46,24 +49,24 @@
       <div class="stat-label">Drinks Served</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" id="stat-top-drink" style="font-size:1.25rem;">–</div>
+      <div class="stat-value stat-value--compact" id="stat-top-drink">–</div>
       <div class="stat-label">Top Drink</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" id="stat-top-user" style="font-size:1.25rem;">–</div>
+      <div class="stat-value stat-value--compact" id="stat-top-user">–</div>
       <div class="stat-label">Top Customer</div>
     </div>
   </div>
 
   <div class="flex gap-2 flex-wrap">
     <!-- Top Drinks chart -->
-    <div class="card flex-1" style="min-width:260px;">
+    <div class="card flex-1 card--min-w-260">
       <h3 class="mb-1">🍹 Top Drinks</h3>
       <div class="bar-chart" id="drinks-chart"></div>
     </div>
 
     <!-- Top customers -->
-    <div class="card flex-1" style="min-width:220px;">
+    <div class="card flex-1 card--min-w-220">
       <h3 class="mb-1">🏆 Top Customers</h3>
       <ul class="leaderboard-list" id="users-list"></ul>
     </div>

@@ -240,6 +240,7 @@
   font-weight: 500;
   background: var(--color-surface);
   transition: border-color var(--transition), background var(--transition);
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -462,6 +463,7 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   font-size: 1.0625rem;
 }
@@ -675,6 +677,47 @@
 }
 
 .widget-status-label { font-size: .75rem; color: var(--color-text-muted); }
+
+/* === Layout / utility helpers === */
+.container--page-top { padding-top: 1rem; }
+.container--page-bottom { padding-bottom: 2rem; }
+.mode-card-sub { font-weight: 400; font-size: 0.8rem; }
+.btn-page-logo {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.card--border-danger { border-color: var(--color-danger); }
+.card--border-accent { border-color: var(--color-accent); }
+.card--bg-page { background: var(--color-bg); }
+.font-semibold { font-weight: 600; }
+.label--no-margin { margin: 0; }
+.text-hint-sm { font-size: 0.875rem; }
+.text-meta-sm { font-size: 0.875rem; margin-bottom: 0.25rem; }
+.alert-user-name {
+  margin-top: 0.75rem;
+  opacity: 0.75;
+  font-size: clamp(1.5rem, 5vw, 2.75rem);
+  font-weight: 800;
+}
+.bar-controls-title { font-weight: 700; }
+.bar-controls-body--stack {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.drinks-list-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.spacing-ml-sm { margin-left: 0.5rem; }
+.section-muted-footer { margin-bottom: 1rem; }
+.stat-value--compact { font-size: 1.25rem; }
+.card--min-w-260 { min-width: 260px; }
+.card--min-w-220 { min-width: 220px; }
 
 /* === User list === */
 .user-list {

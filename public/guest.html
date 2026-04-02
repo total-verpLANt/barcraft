@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Order – Barcraft</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/animations.css">
@@ -18,7 +20,8 @@
     <p>Enter the bar password to continue</p>
     <form id="password-form">
       <div class="form-group">
-        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+        <label class="sr-only" for="barcraft-password">Password</label>
+        <input id="barcraft-password" class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
       </div>
       <button class="btn btn-primary btn-full" type="submit">Enter</button>
       <p id="auth-error" class="auth-error"></p>
@@ -35,12 +38,12 @@
 
 <div class="page-header">
   <div class="container">
-    <button id="btn-logo" class="page-title" style="background:none;border:none;padding:0;cursor:pointer;">🍺 <span class="accent">Barcraft</span></button>
+    <button id="btn-logo" type="button" class="page-title btn-page-logo">🍺 <span class="accent">Barcraft</span></button>
     <a href="/" class="btn btn-ghost btn-sm">← Back</a>
   </div>
 </div>
 
-<div class="container" style="padding-bottom:2rem;">
+<div class="container container--page-bottom">
 
   <!-- View 1: User Select -->
   <div id="view-user-select">
@@ -72,11 +75,11 @@
       </div>
       <button class="btn btn-ghost btn-sm" id="btn-switch-user">Switch</button>
     </div>
-    <input type="file" id="avatar-file-input" accept="image/*" class="hidden">
+    <input type="file" id="avatar-file-input" accept="image/*" class="hidden" aria-label="Avatar-Bild wählen">
 
     <!-- Bar closed/paused message -->
-    <div id="bar-status-msg" class="hidden card mb-2" style="border-color: var(--color-danger);">
-      <p id="bar-status-text" class="text-danger" style="font-weight:600;"></p>
+    <div id="bar-status-msg" class="hidden card mb-2 card--border-danger">
+      <p id="bar-status-text" class="text-danger font-semibold"></p>
     </div>
 
     <!-- Push notification banner -->
@@ -131,16 +134,16 @@
       <p class="text-muted">This won't be added to the menu.</p>
     </div>
 
-    <div class="card mt-2" style="background: var(--color-bg);">
+    <div class="card mt-2 card--bg-page">
       <div class="flex items-center justify-between mb-1">
-        <span class="label" style="margin:0;">Quantity</span>
+        <span class="label label--no-margin">Quantity</span>
         <div class="qty-control">
           <button class="qty-btn" id="qty-minus">−</button>
           <span class="qty-value" id="qty-display">1</span>
           <button class="qty-btn" id="qty-plus">+</button>
         </div>
       </div>
-      <div id="selected-drink-preview" class="text-muted" style="font-size:.875rem;"></div>
+      <div id="selected-drink-preview" class="text-muted text-hint-sm"></div>
     </div>
 
     <button class="btn btn-primary btn-full mt-2" id="btn-submit-order" disabled>Order Now</button>
@@ -152,9 +155,9 @@
       <div class="status-icon" id="status-icon">⏳</div>
       <h2 id="status-title">Order Sent!</h2>
       <p class="text-muted mt-1" id="status-description">Your order is in the queue. The bartender will get to it shortly.</p>
-      <div id="status-comment" class="hidden card mt-2" style="border-color:var(--color-accent);">
-        <p class="text-muted" style="font-size:.875rem;margin-bottom:.25rem;">Message from the bar:</p>
-        <p id="comment-text" style="font-weight:600;"></p>
+      <div id="status-comment" class="hidden card mt-2 card--border-accent">
+        <p class="text-muted text-meta-sm">Message from the bar:</p>
+        <p id="comment-text" class="font-semibold"></p>
       </div>
     </div>
     <button class="btn btn-secondary btn-full mt-3" id="btn-order-again">Order Again</button>

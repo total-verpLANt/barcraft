@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcraft</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/animations.css">
@@ -18,7 +20,8 @@
     <p>Enter the bar password to continue</p>
     <form id="password-form">
       <div class="form-group">
-        <input class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
+        <label class="sr-only" for="barcraft-password">Password</label>
+        <input id="barcraft-password" class="input" type="password" placeholder="Password" autofocus autocomplete="current-password">
       </div>
       <button class="btn btn-primary btn-full" type="submit">Enter</button>
       <p id="auth-error" class="auth-error"></p>
@@ -32,7 +35,7 @@
   </div>
 </div>
 
-<div class="container" style="padding-top: 1rem;">
+<div class="container container--page-top">
   <h2 class="text-center">Welcome to Barcraft</h2>
   <p class="text-muted text-center mt-1">Choose your mode to get started</p>
 
@@ -40,12 +43,12 @@
     <a href="/bar.html" class="mode-card">
       <span class="mode-icon">🍹</span>
       <span>Bar Mode</span>
-      <span class="text-muted" style="font-weight:400;font-size:.8rem">For the bartender tablet</span>
+      <span class="text-muted mode-card-sub">For the bartender tablet</span>
     </a>
     <a href="/guest.html" class="mode-card">
       <span class="mode-icon">🎮</span>
       <span>Guest Mode</span>
-      <span class="text-muted" style="font-weight:400;font-size:.8rem">Order from your seat</span>
+      <span class="text-muted mode-card-sub">Order from your seat</span>
     </a>
   </div>
 
