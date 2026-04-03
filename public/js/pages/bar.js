@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-  const { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash } = Utils;
+  const { escapeHtml, formatRelativeTime, formatElapsed } = Utils;
   const socket = SocketClient.getSocket();
 
   let orders = [];
