@@ -4,6 +4,13 @@
   const { escapeHtml, formatRelativeTime, formatElapsed } = Utils;
   const socket = SocketClient.getSocket();
 
+  function authJsonHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = window.Auth && Auth.getToken ? Auth.getToken() : null;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }
+
   let orders = [];
   let timerInterval = null;
 
@@ -33,6 +40,42 @@
     ).join('');
   }
 
+  (function setupBarAddDrink() {
+    const catSelect = document.getElementById('bar-new-drink-category');
+    if (catSelect) {
+      catSelect.innerHTML = CATEGORIES.map(c =>
+        `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label)}</option>`
+      ).join('');
+    }
+    const nameEl = document.getElementById('bar-new-drink-name');
+    const addBtn = document.getElementById('bar-btn-add-drink');
+    if (!addBtn || !nameEl) return;
+
+    async function submitNewDrink() {
+      const catEl = document.getElementById('bar-new-drink-category');
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      try {
+        const res = await fetch('/api/drinks', {
+          method: 'POST',
+          headers: authJsonHeaders(),
+          body: JSON.stringify({ name, category: catEl.value }),
+        });
+        if (res.ok) {
+          nameEl.value = '';
+          await loadDrinks();
+        } else if (res.status === 401) {
+          alert('Nicht angemeldet – Seite neu laden und Passwort eingeben.');
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    addBtn.addEventListener('click', submitNewDrink);
+    nameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); submitNewDrink(); }
+    });
+  })();
+
   function renderDrinks(drinks) {
     const list = document.getElementById('drinks-list');
     const noMsg = document.getElementById('no-drinks-msg');
@@ -54,7 +97,7 @@
       sel.addEventListener('change', async () => {
         await fetch(`/api/drinks/${sel.dataset.catDrink}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authJsonHeaders(),
           body: JSON.stringify({ category: sel.value }),
         });
       });
@@ -62,7 +105,10 @@
     list.querySelectorAll('[data-delete-drink]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm(`Drink "${btn.closest('div').querySelector('span').textContent}" löschen?`)) return;
-        await fetch(`/api/drinks/${btn.dataset.deleteDrink}`, { method: 'DELETE' });
+        await fetch(`/api/drinks/${btn.dataset.deleteDrink}`, {
+          method: 'DELETE',
+          headers: authJsonHeaders(),
+        });
         await loadDrinks();
       });
     });
