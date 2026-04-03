@@ -12,6 +12,7 @@ const { getStats } = require('../db/stats');
 const { readJson, writeJson } = require('../db/fileDb');
 const { ORDER_STATUS, SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { sendPushToUser } = require('../utils/pushNotifications');
+const { containsProfanity } = require('../utils/profanityCheck');
 
 let _io = null;
 let _userSocketMap = null;
@@ -164,6 +165,14 @@ router.post('/orders', async (req, res) => {
     }
     if (barState && barState.status === 'paused') {
       return res.status(403).json({ error: 'Bar is paused' });
+    }
+
+    if (drink && drink.isFreeText && drink.name) {
+      if (containsProfanity(drink.name)) {
+        return res.status(400).json({
+          error: 'Freie Bestellung enthält unzulässige Wörter. Bitte neutral formulieren.',
+        });
+      }
     }
 
     const user = await getUserById(userId);
