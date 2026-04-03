@@ -143,7 +143,7 @@
             <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
           </div>
         </div>
-        <span class="badge badge-pending">Pending</span>
+        <span class="badge badge-pending">Offen</span>
       </div>
       <div class="order-meta">${formatRelativeTime(order.createdAt)}</div>
       <div class="order-actions">
@@ -167,7 +167,7 @@
             <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
           </div>
         </div>
-        <span class="badge badge-accepted">In Prep</span>
+        <span class="badge badge-accepted">In Zubereitung</span>
       </div>
       <div class="flex items-center justify-between mt-1">
         <span class="order-timer ${warnClass}" id="timer-${escapeHtml(order.id)}">⏱ ${elapsed}</span>
@@ -189,7 +189,7 @@
           <div class="order-name" style="font-size:.9rem;">🎮 ${escapeHtml(order.userName)}</div>
           <div class="order-drink" style="font-size:.85rem;"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
         </div>
-        <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Done' : '✗ Rejected'}</span>
+        <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Fertig' : '✗ Abgelehnt'}</span>
       </div>
     </div>`;
   }
