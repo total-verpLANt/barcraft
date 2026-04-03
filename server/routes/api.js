@@ -13,6 +13,7 @@ const { readJson, writeJson } = require('../db/fileDb');
 const { ORDER_STATUS, SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { sendPushToUser } = require('../utils/pushNotifications');
 const { containsProfanity } = require('../utils/profanityCheck');
+const { formatOrderSummary } = require('../utils/orderHelpers');
 
 let _io = null;
 let _userSocketMap = null;
@@ -154,8 +155,10 @@ router.patch('/users/:id/avatar', async (req, res) => {
 });
 
 router.post('/orders', async (req, res) => {
-  const { userId, userName, drink, quantity } = req.body;
-  if (!userId || !drink) return res.status(400).json({ error: 'userId and drink required' });
+  const { userId, userName, items, drink, quantity } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  const hasItems = items && Array.isArray(items) && items.length > 0;
+  if (!hasItems && !drink) return res.status(400).json({ error: 'items or drink required' });
 
   try {
     // Check bar state
@@ -177,11 +180,13 @@ router.post('/orders', async (req, res) => {
 
     const user = await getUserById(userId);
     const userAvatar = user?.avatarDataUrl || null;
-    const order = await createOrder({ userId, userName, userAvatar, drink, quantity });
+    const order = await createOrder({ userId, userName, userAvatar, items, drink, quantity });
 
     // Increment counters
-    if (!drink.isFreeText && drink.drinkId) {
-      await incrementDrinkOrderCount(drink.drinkId);
+    for (const line of order.items) {
+      if (!line.drink.isFreeText && line.drink.drinkId) {
+        await incrementDrinkOrderCount(line.drink.drinkId);
+      }
     }
     await incrementUserOrderCount(userId);
 
@@ -191,7 +196,9 @@ router.post('/orders', async (req, res) => {
     await broadcastStats();
     res.status(201).json({ order });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const msg = err.message || String(err);
+    const code = msg.includes('Too many') ? 400 : 500;
+    res.status(code).json({ error: msg });
   }
 });
 
@@ -237,13 +244,14 @@ router.patch('/orders/:id', async (req, res) => {
     if (guestEvent) {
       emitToGuest(order.userId, guestEvent, { orderId: order.id, barComment: order.barComment });
       // Send push notification as fallback
+      const summary = formatOrderSummary(order);
       const pushPayload = {
         title: 'Barcraft',
         body: status === ORDER_STATUS.ACCEPTED
-          ? `Your order of ${order.drink.name} was accepted!`
+          ? `${summary} – angenommen!`
           : status === ORDER_STATUS.REJECTED
-          ? `Your order was rejected. ${order.barComment || ''}`
-          : `Your ${order.drink.name} is ready! Come pick it up.`,
+          ? `Bestellung abgelehnt. ${order.barComment || ''}`
+          : `${summary} ist abholbereit!`,
         orderId: order.id,
         status,
       };

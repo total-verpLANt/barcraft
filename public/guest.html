@@ -105,33 +105,48 @@
       <p class="text-muted">Landet als eigene Position im Warenkorb, nicht im Menü.</p>
     </div>
 
-    <div class="card mt-2" style="background: var(--color-bg);">
-      <div class="flex items-center justify-between mb-1">
-        <span class="label" style="margin:0;">Quantity</span>
+    <div class="card mt-2 cart-builder" style="background: var(--color-bg);">
+      <span class="label" style="margin-bottom:0.5rem;display:block;">Menge für diese Position</span>
+      <div class="flex items-center justify-between gap-1 flex-wrap">
         <div class="qty-control">
-          <button class="qty-btn" id="qty-minus">−</button>
-          <span class="qty-value" id="qty-display">1</span>
-          <button class="qty-btn" id="qty-plus">+</button>
+          <button type="button" class="qty-btn" id="line-qty-minus" aria-label="Menge verringern">−</button>
+          <span class="qty-value" id="line-qty-display">1</span>
+          <button type="button" class="qty-btn" id="line-qty-plus" aria-label="Menge erhöhen">+</button>
         </div>
+        <button type="button" class="btn btn-secondary" id="btn-add-to-cart" disabled>In den Warenkorb</button>
       </div>
-      <div id="selected-drink-preview" class="text-muted" style="font-size:.875rem;"></div>
+      <p id="selection-hint" class="text-muted mt-1" style="font-size:.8125rem;margin-bottom:0;">Wähle ein Getränk aus dem Menü oder „Freie Bestellung".</p>
     </div>
 
-    <button class="btn btn-primary btn-full mt-2" id="btn-submit-order" disabled>Order Now</button>
+    <div class="cart-panel card mt-2" id="cart-panel">
+      <div class="cart-panel-header flex items-center justify-between mb-1">
+        <span class="label" style="margin:0;">Warenkorb</span>
+        <span id="cart-badge" class="badge-count hidden" aria-hidden="true">0</span>
+      </div>
+      <p id="cart-empty" class="text-muted" style="font-size:.875rem;margin:0;">Noch keine Artikel.</p>
+      <ul class="cart-lines" id="cart-lines"></ul>
+      <div class="cart-footer">
+        <div class="flex items-center justify-between mb-1 mt-2">
+          <span class="text-muted" style="font-size:.875rem;">Zwischensumme</span>
+          <span id="cart-subtotal" class="cart-subtotal">0 Artikel</span>
+        </div>
+        <button type="button" class="btn btn-primary btn-full" id="btn-checkout" disabled>Jetzt bestellen</button>
+      </div>
+    </div>
   </div>
 
   <!-- View 3: Waiting -->
   <div id="view-waiting" class="hidden">
     <div class="status-card" id="waiting-status-card">
       <div class="status-icon" id="status-icon">⏳</div>
-      <h2 id="status-title">Order Sent!</h2>
-      <p class="text-muted mt-1" id="status-description">Your order is in the queue. The bartender will get to it shortly.</p>
+      <h2 id="status-title">Bestellung gesendet!</h2>
+      <p class="text-muted mt-1" id="status-description">Deine Bestellung ist in der Warteschlange.</p>
       <div id="status-comment" class="hidden card mt-2" style="border-color:var(--color-accent);">
         <p class="text-muted" style="font-size:.875rem;margin-bottom:.25rem;">Message from the bar:</p>
         <p id="comment-text" style="font-weight:600;"></p>
       </div>
     </div>
-    <button class="btn btn-secondary btn-full mt-3" id="btn-order-again">Order Again</button>
+    <button class="btn btn-secondary btn-full mt-3" id="btn-order-again">Nochmal bestellen</button>
   </div>
 
 </div>

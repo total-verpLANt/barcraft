@@ -1,6 +1,7 @@
 'use strict';
 
 const { readJson } = require('./fileDb');
+const { getOrderLines, formatOrderSummaryDetailed, totalPieces } = require('../utils/orderHelpers');
 
 async function getStats() {
   const [ordersData, drinksData, usersData] = await Promise.all([
@@ -20,8 +21,10 @@ async function getStats() {
   const drinkCounts = {};
   for (const order of orders) {
     if (order.status === 'completed' || order.status === 'accepted') {
-      const name = order.drink.name;
-      drinkCounts[name] = (drinkCounts[name] || 0) + (order.quantity || 1);
+      for (const line of getOrderLines(order)) {
+        const name = line.drink.name;
+        drinkCounts[name] = (drinkCounts[name] || 0) + (line.quantity || 1);
+      }
     }
   }
   const topDrinks = Object.entries(drinkCounts)
@@ -50,8 +53,9 @@ async function getStats() {
     .map(o => ({
       id: o.id,
       userName: o.userName,
-      drink: o.drink.name,
-      quantity: o.quantity,
+      drink: o.drink ? o.drink.name : '',
+      summary: formatOrderSummaryDetailed(o, 100),
+      quantity: totalPieces(o),
       status: o.status,
       createdAt: o.createdAt,
     }));
