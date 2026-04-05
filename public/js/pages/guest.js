@@ -18,6 +18,15 @@
   let activeTab = 'menu';
   let activeOrders = []; // { orderId, drinkName, status, barComment }
   let waitingOrderId = null; // Bestellung die in der Waiting-View angezeigt wird
+
+  const FREETEXT_BLOCKED_MSG =
+    'Freie Bestellung enthält unzulässige Wörter. Bitte neutral formulieren.';
+
+  async function assertFreeTextAllowed(text) {
+    if (typeof ProfanityCheck === 'undefined') return true;
+    const bad = await ProfanityCheck.checkText(text);
+    return !bad;
+  }
   let barState = { status: 'open' };
 
   const USER_KEY = 'barcraft_user';
@@ -397,6 +406,10 @@
   // Submit order
   document.getElementById('btn-submit-order').addEventListener('click', async () => {
     if (!selectedDrink || !currentUser) return;
+    if (selectedDrink.isFreeText) {
+      const allowed = await assertFreeTextAllowed(selectedDrink.name);
+      if (!allowed) { alert(FREETEXT_BLOCKED_MSG); return; }
+    }
     const btn = document.getElementById('btn-submit-order');
     btn.disabled = true;
     btn.textContent = 'Sending…';
@@ -642,6 +655,14 @@
     activeOrders = loadActiveOrders().filter(o => o.status === 'pending' || o.status === 'accepted');
     saveActiveOrders();
     updateWidget();
+  }
+
+  try {
+    if (typeof ProfanityCheck !== 'undefined') {
+      await ProfanityCheck.loadWords();
+    }
+  } catch {
+    /* Liste optional; Server prüft immer */
   }
 
   const savedUser = loadUser();
