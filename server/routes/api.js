@@ -12,6 +12,9 @@ const { getStats } = require('../db/stats');
 const { readJson, writeJson } = require('../db/fileDb');
 const { ORDER_STATUS, SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { sendPushToUser } = require('../utils/pushNotifications');
+const crypto = require('crypto');
+
+const activeSessions = new Set();
 
 let _io = null;
 let _userSocketMap = null;
@@ -39,13 +42,7 @@ function verifyBarToken(req) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) return false;
   const token = auth.slice(7);
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf8');
-    const password = decoded.split(':')[0];
-    return password === config.password;
-  } catch {
-    return false;
-  }
+  return activeSessions.has(token);
 }
 
 function requireBarAuth(req, res, next) {
@@ -60,8 +57,8 @@ router.post('/auth', (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'Password required' });
   if (password === config.password) {
-    // Simple token: base64 of password + timestamp
-    const token = Buffer.from(`${password}:${Date.now()}`).toString('base64');
+    const token = crypto.randomBytes(32).toString('hex');
+    activeSessions.add(token);
     return res.json({ token, barName: config.barName });
   }
   res.status(401).json({ error: 'Invalid password' });
