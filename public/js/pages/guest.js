@@ -20,14 +20,6 @@
   let activeOrders = []; // { orderId, drinkName, status, barComment }
   let waitingOrderId = null; // Bestellung die in der Waiting-View angezeigt wird
 
-  const FREETEXT_BLOCKED_MSG =
-    'Freie Bestellung enthält unzulässige Wörter. Bitte neutral formulieren.';
-
-  async function assertFreeTextAllowed(text) {
-    if (typeof ProfanityCheck === 'undefined') return true;
-    const bad = await ProfanityCheck.checkText(text);
-    return !bad;
-  }
   let barState = { status: 'open' };
 
   const USER_KEY = 'barcraft_user';
@@ -778,14 +770,6 @@
       updateBarStatusMsg();
     }
   });
-
-  try {
-    if (typeof ProfanityCheck !== 'undefined') {
-      await ProfanityCheck.loadWords();
-    }
-  } catch {
-    /* Liste optional; Server prüft immer */
-  }
 
   try {
     if (typeof ProfanityCheck !== 'undefined') {
