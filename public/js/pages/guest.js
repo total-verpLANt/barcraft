@@ -704,6 +704,7 @@
     btn.textContent = '…';
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
+      await PushClient.registerPushSubscription(currentUser.id);
       document.getElementById('push-banner').classList.add('hidden');
     } else if (permission === 'denied') {
       document.getElementById('push-banner-text').textContent = 'Notifications blockiert – in den Browser-Einstellungen erlauben.';
