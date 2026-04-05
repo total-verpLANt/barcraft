@@ -9,7 +9,7 @@ Echtzeit-Bestellsystem für die LAN-Party-Bar. Gäste bestellen vom PC oder Hand
 - **Gast-Modus** – Getränk auswählen oder neu hinzufügen, Bestellung absenden, Statusupdates in Echtzeit
 - **Bar-Modus** – Bestellqueue mit Accept/Reject, Zubereitungs-Timer, auffälliges Overlay bei neuen Bestellungen
 - **Leaderboard** – Live-Statistiken: meistbestellte Drinks, treueste Gäste, Aktivitätsfeed
-- **Push-Benachrichtigungen** – Web Push per Service Worker (optional, VAPID erforderlich)
+- **Push-Benachrichtigungen** – Web Push per Service Worker (automatisch konfiguriert)
 - **Dark Mode** – standardmäßig, weil LAN-Party
 - **Passwortschutz** – gemeinsames Passwort für alle Seiten
 - **Datenpersistenz** – JSON-Dateien in `/data/`, kein Datenbankvorbereitung nötig
@@ -49,25 +49,9 @@ npm install --omit=dev
 }
 ```
 
-**`.env`** – Port und VAPID-Keys für Push-Benachrichtigungen:
+**`.env`** (optional) – Port anpassen:
 ```bash
 cp .env.example .env
-```
-
-VAPID-Keys generieren (einmalig):
-```bash
-node -e "
-const wp = require('web-push');
-const k = wp.generateVAPIDKeys();
-const fs = require('fs');
-fs.writeFileSync('.env',
-  'VAPID_PUBLIC_KEY=' + k.publicKey + '\n' +
-  'VAPID_PRIVATE_KEY=' + k.privateKey + '\n' +
-  'VAPID_EMAIL=mailto:admin@barcraft.local\n' +
-  'PORT=3000\n'
-);
-console.log('Keys gespeichert.');
-"
 ```
 
 ### Starten
@@ -137,7 +121,7 @@ Alle Seiten sind mit demselben Passwort aus `config.json` geschützt.
 ```
 barcraft/
 ├── config.json          # Passwort, Bar-Name
-├── .env                 # VAPID-Keys, Port (nicht eingecheckt)
+├── .env                 # Port-Konfiguration (optional, nicht eingecheckt)
 ├── server/
 │   ├── index.js         # Express + Socket.io
 │   ├── routes/api.js    # REST-Endpunkte
@@ -156,16 +140,17 @@ barcraft/
     ├── drinks.json
     ├── users.json
     ├── bar-state.json
-    └── push-subscriptions.json
+    ├── push-subscriptions.json
+    └── vapid-keys.json  # Automatisch generierte VAPID-Keys für Web Push
 ```
 
 ---
 
 ## Push-Benachrichtigungen
 
-Push ist optional. Ohne VAPID-Keys läuft alles normal, nur der Notification-Button wird bei Gästen ausgeblendet.
+VAPID-Keys werden beim ersten Start automatisch generiert und in `data/vapid-keys.json` gespeichert. Push funktioniert ohne manuelle Konfiguration.
 
-Mit gültigen VAPID-Keys im `.env` können Gäste im Browser Push-Benachrichtigungen aktivieren und werden informiert wenn ihre Bestellung angenommen oder fertig ist.
+Gäste können im Browser Push-Benachrichtigungen aktivieren und werden informiert wenn ihre Bestellung angenommen oder fertig ist.
 
 > **iOS**: Push über Web App erfordert "Zum Home-Bildschirm hinzufügen" (PWA-Install).
 
