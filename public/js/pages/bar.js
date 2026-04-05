@@ -181,7 +181,7 @@
     // Standby vs queue
     const active = pending.length + accepted.length;
     document.getElementById('bar-standby').classList.toggle('hidden', active > 0);
-    document.getElementById('bar-queue').style.display = active === 0 && pending.length === 0 ? '' : '';
+    document.getElementById('bar-queue').style.display = active > 0 ? '' : 'none';
 
     // Update standby badge
     document.getElementById('standby-pending-count').classList.toggle('hidden', pending.length === 0);
