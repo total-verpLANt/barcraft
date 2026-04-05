@@ -75,8 +75,19 @@
       <span id="drinks-arrow">▼</span>
     </div>
     <div class="bar-controls-body hidden bar-controls-body--stack" id="drinks-body">
+      <div class="flex gap-1 flex-wrap" style="align-items:flex-end;">
+        <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0;">
+          <label class="label" for="bar-new-drink-name">Neues Getränk</label>
+          <input class="input" type="text" id="bar-new-drink-name" placeholder="z. B. Moscow Mule" maxlength="60" autocomplete="off">
+        </div>
+        <div class="form-group" style="width:140px;margin-bottom:0;">
+          <label class="label" for="bar-new-drink-category">Kategorie</label>
+          <select class="select" id="bar-new-drink-category"></select>
+        </div>
+        <button type="button" class="btn btn-secondary" id="bar-btn-add-drink">Hinzufügen</button>
+      </div>
       <div id="drinks-list" class="drinks-list-wrap"></div>
-      <p id="no-drinks-msg" class="text-muted hidden">Noch keine Getränke. Gäste können über "Add Drink" neue hinzufügen.</p>
+      <p id="no-drinks-msg" class="text-muted hidden">Noch keine Getränke – oben eintragen.</p>
     </div>
   </div>
 

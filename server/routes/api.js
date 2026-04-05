@@ -35,6 +35,26 @@ async function broadcastStats() {
   _io.emit(SOCKET_EVENTS.STATS_UPDATED, { stats });
 }
 
+function verifyBarToken(req) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return false;
+  const token = auth.slice(7);
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const password = decoded.split(':')[0];
+    return password === config.password;
+  } catch {
+    return false;
+  }
+}
+
+function requireBarAuth(req, res, next) {
+  if (!verifyBarToken(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // --- Auth ---
 router.post('/auth', (req, res) => {
   const { password } = req.body;
@@ -78,7 +98,7 @@ router.get('/drinks', async (req, res) => {
   }
 });
 
-router.post('/drinks', async (req, res) => {
+router.post('/drinks', requireBarAuth, async (req, res) => {
   const { name, category } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
   try {
@@ -89,7 +109,7 @@ router.post('/drinks', async (req, res) => {
   }
 });
 
-router.patch('/drinks/:id', async (req, res) => {
+router.patch('/drinks/:id', requireBarAuth, async (req, res) => {
   try {
     const drink = await updateDrink(req.params.id, req.body);
     if (!drink) return res.status(404).json({ error: 'Drink not found' });
@@ -99,7 +119,7 @@ router.patch('/drinks/:id', async (req, res) => {
   }
 });
 
-router.delete('/drinks/:id', async (req, res) => {
+router.delete('/drinks/:id', requireBarAuth, async (req, res) => {
   try {
     const ok = await deleteDrink(req.params.id);
     if (!ok) return res.status(404).json({ error: 'Drink not found' });

@@ -90,48 +90,22 @@
     </div>
 
     <div class="tabs" id="order-tabs">
-      <button class="tab active" data-tab="menu">Menu</button>
-      <button class="tab" data-tab="add-drink">Add Drink</button>
-      <button class="tab" data-tab="free-text">Free Text</button>
-      <button class="tab" data-tab="edit-drink">Edit Drink</button>
+      <button type="button" class="tab active" data-tab="menu">Menü</button>
+      <button type="button" class="tab" data-tab="free-text">Freie Bestellung</button>
     </div>
 
-    <!-- Tab: Menu -->
+    <!-- Tab: Menu (vom Bar-Modus gepflegt) -->
     <div id="tab-menu">
       <div id="drink-menu"></div>
     </div>
 
-    <!-- Tab: Add Drink -->
-    <div id="tab-add-drink" class="hidden">
-      <div class="form-group">
-        <label class="label" for="new-drink-name">Drink name</label>
-        <input class="input" type="text" id="new-drink-name" placeholder="e.g. Bionade Ingwer" maxlength="60" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="label" for="new-drink-category">Category</label>
-        <select class="select" id="new-drink-category">
-          <option value="soft">Soft Drink</option>
-          <option value="energy">Energy</option>
-          <option value="beer">Beer</option>
-          <option value="cocktail">Cocktail</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <button class="btn btn-secondary btn-full" id="btn-add-drink">Add to Menu & Select</button>
-    </div>
-
-    <!-- Tab: Edit Drink -->
-    <div id="tab-edit-drink" class="hidden">
-      <div id="edit-drink-list"></div>
-    </div>
-
-    <!-- Tab: Free Text -->
+    <!-- Tab: Freie Bestellung (nicht im Menü; z. B. Wasser mit Eis) -->
     <div id="tab-free-text" class="hidden">
       <div class="form-group">
-        <label class="label" for="free-text-input">Describe your order</label>
-        <input class="input" type="text" id="free-text-input" placeholder="e.g. A glass of water with ice" maxlength="100" autocomplete="off">
+        <label class="label" for="free-text-input">Was darf es sein?</label>
+        <input class="input" type="text" id="free-text-input" placeholder="z. B. Wasser mit Eis" maxlength="100" autocomplete="off">
       </div>
-      <p class="text-muted">This won't be added to the menu.</p>
+      <p class="text-muted">Landet als eigene Position im Warenkorb, nicht im Menü.</p>
     </div>
 
     <div class="card mt-2 card--bg-page">
