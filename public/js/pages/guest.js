@@ -497,13 +497,13 @@
 
     if (type === 'pending') {
       icon.textContent = '⏳';
-      title.textContent = 'Order Sent!';
-      desc.textContent = 'Your order is in the queue. The bartender will get to it shortly.';
+      title.textContent = 'Bestellung gesendet!';
+      desc.textContent = 'Deine Bestellung ist in der Warteschlange.';
       commentBox.classList.add('hidden');
     } else if (type === 'accepted') {
       icon.textContent = '🍹';
-      title.textContent = 'Order Accepted!';
-      desc.textContent = "Hang tight! Your drink is being prepared.";
+      title.textContent = 'Bestellung angenommen!';
+      desc.textContent = 'Dein Getränk wird gerade zubereitet.';
       triggerFlash(card, 'accepted');
       if (barComment) {
         commentBox.classList.remove('hidden');
@@ -511,8 +511,8 @@
       }
     } else if (type === 'rejected') {
       icon.textContent = '😢';
-      title.textContent = 'Order Rejected';
-      desc.textContent = "Your order couldn't be fulfilled.";
+      title.textContent = 'Bestellung abgelehnt';
+      desc.textContent = 'Deine Bestellung konnte nicht erfüllt werden.';
       triggerFlash(card, 'rejected');
       if (barComment) {
         commentBox.classList.remove('hidden');
@@ -520,8 +520,8 @@
       }
     } else if (type === 'completed') {
       icon.textContent = '🎉';
-      title.textContent = 'Ready to Collect!';
-      desc.textContent = 'Your drink is ready! Come pick it up at the bar.';
+      title.textContent = 'Abholbereit!';
+      desc.textContent = 'Dein Getränk ist fertig. Komm an die Bar.';
       card.classList.add('celebrate');
       setTimeout(() => card.classList.remove('celebrate'), 600);
       triggerFlash(card, 'completed');

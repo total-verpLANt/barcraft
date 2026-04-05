@@ -60,7 +60,7 @@
       feedEl.innerHTML = stats.recentOrders.map(o => `
         <li class="activity-item">
           <span class="activity-dot ${o.status}"></span>
-          <span><strong>${escapeHtml(o.userName)}</strong> ordered <strong>${escapeHtml(o.drink)}</strong> ×${o.quantity}</span>
+          <span><strong>${escapeHtml(o.userName)}</strong> · <strong>${escapeHtml(o.summary || o.drink)}</strong>${o.quantity > 1 ? ` <span class="text-muted">(${o.quantity} Stk.)</span>` : ''}</span>
           <span class="activity-time">${formatRelativeTime(o.createdAt)}</span>
         </li>
       `).join('');
