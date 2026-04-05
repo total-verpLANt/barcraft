@@ -13,6 +13,7 @@ Project overview, tech stack, and file structure live in the [README](README.md)
 
 ## Testing
 
+- **Every change must be tested before opening a PR.** At minimum, manually verify that the affected flows still work (e.g. guest ordering, bar accepting/rejecting, status updates). Don't rely on reviewers to catch runtime breakage.
 - There is no mandatory unit test suite in CI; **manual smoke testing** of guest → bar → status updates is the default bar for risky changes.
 - Playwright is listed under `devDependencies`; if you add automated checks, keep them maintainable and scoped.
 
