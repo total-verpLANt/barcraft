@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-  const { escapeHtml, formatRelativeTime, formatElapsed } = Utils;
+  const { escapeHtml, formatRelativeTime, formatElapsed, getOrderLines } = Utils;
   const socket = SocketClient.getSocket();
 
   function authJsonHeaders() {
@@ -13,6 +13,18 @@
 
   let orders = [];
   let timerInterval = null;
+
+  function renderOrderLinesHtml(order) {
+    return getOrderLines(order)
+      .map((l) => {
+        const ft =
+          l.drink && l.drink.isFreeText
+            ? '<span class="badge-freetext" title="Freie Bestellung (nicht aus dem Menü)">Freitext</span>'
+            : '';
+        return `<div class="order-drink order-drink-line">${ft}<span class="qty">×${l.quantity}</span> ${escapeHtml(l.drink.name)}</div>`;
+      })
+      .join('');
+  }
 
   // Join bar room
   socket.emit('client:bar_join');
@@ -186,7 +198,7 @@
           ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
           <div>
             <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+            ${renderOrderLinesHtml(order)}
           </div>
         </div>
         <span class="badge badge-pending">Offen</span>
@@ -210,7 +222,7 @@
           ${order.userAvatar ? `<img src="${escapeHtml(order.userAvatar)}" class="order-avatar" alt="">` : ''}
           <div>
             <div class="order-name">🎮 ${escapeHtml(order.userName)}</div>
-            <div class="order-drink"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+            ${renderOrderLinesHtml(order)}
           </div>
         </div>
         <span class="badge badge-accepted">In Zubereitung</span>
@@ -233,7 +245,7 @@
       <div class="order-card-header">
         <div>
           <div class="order-name" style="font-size:.9rem;">🎮 ${escapeHtml(order.userName)}</div>
-          <div class="order-drink" style="font-size:.85rem;"><span class="qty">×${order.quantity}</span> ${escapeHtml(order.drink.name)}</div>
+          <div style="font-size:.85rem;">${renderOrderLinesHtml(order)}</div>
         </div>
         <span class="badge ${isDone ? 'badge-completed' : 'badge-rejected'}">${isDone ? '✓ Fertig' : '✗ Abgelehnt'}</span>
       </div>
@@ -309,8 +321,25 @@
     } else {
       avatarEl.classList.add('hidden');
     }
-    document.getElementById('alert-drink').textContent = order.drink.name;
-    document.getElementById('alert-qty').textContent = `× ${order.quantity}`;
+    const lines = getOrderLines(order);
+    const ftHint = document.getElementById('alert-freetext-hint');
+    if (ftHint) {
+      const anyFree = lines.some((l) => l.drink && l.drink.isFreeText);
+      ftHint.classList.toggle('hidden', !anyFree);
+    }
+    if (lines.length === 0) {
+      document.getElementById('alert-drink').textContent = order.drink?.name || '';
+      document.getElementById('alert-qty').textContent = '';
+    } else {
+      const shown = lines
+        .slice(0, 3)
+        .map((l) => `${l.quantity}× ${l.drink.name}`)
+        .join(' · ');
+      document.getElementById('alert-drink').textContent =
+        lines.length > 3 ? `${shown} …` : shown;
+      document.getElementById('alert-qty').textContent =
+        lines.length > 1 ? `${lines.length} Positionen` : `× ${lines[0].quantity}`;
+    }
     document.getElementById('alert-user').textContent = `von ${order.userName}`;
     overlay.classList.remove('hidden');
     overlay.style.animation = 'none';

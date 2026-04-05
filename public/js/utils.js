@@ -50,4 +50,11 @@ function groupBy(arr, keyFn) {
   return result;
 }
 
-window.Utils = { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash, groupBy };
+function getOrderLines(order) {
+  if (!order) return [];
+  if (Array.isArray(order.items) && order.items.length > 0) return order.items;
+  if (order.drink) return [{ drink: order.drink, quantity: order.quantity || 1 }];
+  return [];
+}
+
+window.Utils = { escapeHtml, formatRelativeTime, formatElapsed, triggerFlash, groupBy, getOrderLines };

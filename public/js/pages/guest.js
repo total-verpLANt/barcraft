@@ -1,7 +1,7 @@
 'use strict';
 
 (async function () {
-  const { escapeHtml, groupBy, triggerFlash } = Utils;
+  const { escapeHtml, groupBy, triggerFlash, getOrderLines } = Utils;
   const socket = SocketClient.getSocket();
 
   const CATEGORY_LABELS = {
@@ -13,9 +13,10 @@
   };
 
   let currentUser = null;
-  let selectedDrink = null;
-  let quantity = 1;
-  let activeTab = 'menu';
+  let selectedDrink = null; // aktuelle Auswahl für „In den Warenkorb“
+  let lineQty = 1;
+  /** Warenkorb-Positionen vor dem Absenden */
+  let cart = []; // { drink, quantity }[]
   let activeOrders = []; // { orderId, drinkName, status, barComment }
   let waitingOrderId = null; // Bestellung die in der Waiting-View angezeigt wird
 
@@ -31,6 +32,148 @@
 
   const USER_KEY = 'barcraft_user';
   const ORDER_KEY = 'barcraft_active_orders';
+  const CART_KEY = 'barcraft_cart';
+  const FREETEXT_BLOCKED_MSG =
+    'Freie Bestellung enthält unzulässige Wörter. Bitte neutral formulieren.';
+
+  async function assertFreeTextAllowed(text) {
+    if (typeof ProfanityCheck === 'undefined') return true;
+    const bad = await ProfanityCheck.checkText(text);
+    return !bad;
+  }
+
+  function orderSummaryForWidget(order) {
+    const lines = getOrderLines(order);
+    if (lines.length === 0) return 'Bestellung';
+    if (lines.length === 1) {
+      const l = lines[0];
+      return l.quantity > 1 ? `${l.quantity}× ${l.drink.name}` : l.drink.name;
+    }
+    return `${lines.length} Artikel`;
+  }
+
+  function orderHasFreeText(order) {
+    return getOrderLines(order).some((l) => l.drink && l.drink.isFreeText);
+  }
+
+  function loadCart() {
+    try {
+      const s = sessionStorage.getItem(CART_KEY);
+      const data = s ? JSON.parse(s) : null;
+      cart = Array.isArray(data) ? data : [];
+    } catch {
+      cart = [];
+    }
+  }
+
+  function saveCart() {
+    try {
+      sessionStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch { /* ignore */ }
+  }
+
+  function clearCart() {
+    cart = [];
+    sessionStorage.removeItem(CART_KEY);
+    renderCart();
+  }
+
+  function cartLineKey(drink) {
+    if (drink.drinkId) return `m:${drink.drinkId}`;
+    return `f:${(drink.name || '').trim().toLowerCase()}`;
+  }
+
+  function addLineToCart() {
+    if (!selectedDrink) return;
+    const key = cartLineKey(selectedDrink);
+    const existing = cart.find((c) => cartLineKey(c.drink) === key);
+    if (existing) {
+      existing.quantity = Math.min(99, existing.quantity + lineQty);
+    } else {
+      cart.push({ drink: { ...selectedDrink }, quantity: lineQty });
+    }
+    lineQty = 1;
+    updateLineQtyDisplay();
+    document.getElementById('free-text-input').value = '';
+    selectedDrink = null;
+    document.querySelectorAll('.drink-option.selected').forEach((o) => o.classList.remove('selected'));
+    updateSelectionHint();
+    updateAddToCartButton();
+    renderCart();
+  }
+
+  function renderCart() {
+    const ul = document.getElementById('cart-lines');
+    const empty = document.getElementById('cart-empty');
+    const badge = document.getElementById('cart-badge');
+    const total = cart.reduce((s, l) => s + l.quantity, 0);
+    if (!ul || !empty || !badge) return;
+    if (cart.length === 0) {
+      ul.innerHTML = '';
+      empty.classList.remove('hidden');
+      badge.classList.add('hidden');
+    } else {
+      empty.classList.add('hidden');
+      badge.classList.remove('hidden');
+      badge.textContent = String(total);
+      ul.innerHTML = cart
+        .map(
+          (line, idx) => `
+      <li class="cart-line">
+        <div class="cart-line-main">
+          <span class="cart-line-name">${escapeHtml(line.drink.name)}</span>
+          <div class="cart-line-qty">
+            <button type="button" class="qty-btn qty-btn-sm cart-qty-minus" data-idx="${idx}" aria-label="Weniger">−</button>
+            <span>${line.quantity}</span>
+            <button type="button" class="qty-btn qty-btn-sm cart-qty-plus" data-idx="${idx}" aria-label="Mehr">+</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm cart-remove" data-idx="${idx}" aria-label="Entfernen">✕</button>
+      </li>`
+        )
+        .join('');
+    }
+    const sub = document.getElementById('cart-subtotal');
+    if (sub) sub.textContent = `${total} Artikel`;
+    updateCheckoutButton();
+    saveCart();
+  }
+
+  function updateLineQtyDisplay() {
+    const el = document.getElementById('line-qty-display');
+    const mn = document.getElementById('line-qty-minus');
+    const pl = document.getElementById('line-qty-plus');
+    if (el) el.textContent = lineQty;
+    if (mn) mn.disabled = lineQty <= 1;
+    if (pl) pl.disabled = lineQty >= 99;
+  }
+
+  function updateAddToCartButton() {
+    const btn = document.getElementById('btn-add-to-cart');
+    if (!btn) return;
+    const barClosed = barState.status === 'closed' || barState.status === 'paused';
+    btn.disabled = !selectedDrink || barClosed;
+  }
+
+  function updateCheckoutButton() {
+    const btn = document.getElementById('btn-checkout');
+    if (!btn) return;
+    const total = cart.reduce((s, l) => s + l.quantity, 0);
+    const barClosed = barState.status === 'closed' || barState.status === 'paused';
+    btn.disabled = total === 0 || barClosed;
+    btn.textContent =
+      total > 0 ? `Jetzt bestellen (${total} Artikel)` : 'Jetzt bestellen';
+  }
+
+  function updateSelectionHint() {
+    const el = document.getElementById('selection-hint');
+    if (!el) return;
+    if (selectedDrink) {
+      el.textContent = `Ausgewählt: ${selectedDrink.name} – Menge einstellen und „In den Warenkorb“.`;
+    } else {
+      el.textContent = 'Wähle ein Getränk aus dem Menü oder „Freie Bestellung“.';
+    }
+  }
 
   function saveUser(user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -56,9 +199,10 @@
     try {
       const s = localStorage.getItem(ORDER_KEY);
       const data = s ? JSON.parse(s) : null;
-      if (Array.isArray(data)) return data;
+      return Array.isArray(data) ? data : [];
+    } catch {
       return [];
-    } catch { return []; }
+    }
   }
 
   // Views
@@ -195,10 +339,19 @@
     showView('orderForm');
     document.getElementById('display-username').textContent = currentUser.name;
     showAvatarPreview(currentUser.avatarDataUrl || null);
-    quantity = 1;
+    lineQty = 1;
     selectedDrink = null;
-    updateQtyDisplay();
-    updateSubmitButton();
+    loadCart();
+    document.querySelectorAll('#order-tabs .tab').forEach(t => t.classList.remove('active'));
+    const menuTab = document.querySelector('#order-tabs .tab[data-tab="menu"]');
+    if (menuTab) menuTab.classList.add('active');
+    document.getElementById('tab-menu').classList.remove('hidden');
+    document.getElementById('tab-free-text').classList.add('hidden');
+    document.getElementById('free-text-input').value = '';
+    updateLineQtyDisplay();
+    renderCart();
+    updateSelectionHint();
+    updateAddToCartButton();
     await loadMenu();
     await loadBarState();
     setupPushBanner();
@@ -227,8 +380,8 @@
     } else {
       msg.classList.add('hidden');
     }
-    // Disable submit when closed/paused
-    updateSubmitButton();
+    updateAddToCartButton();
+    updateCheckoutButton();
   }
 
   async function loadMenu() {
@@ -243,7 +396,7 @@
     const container = document.getElementById('drink-menu');
     const available = drinks.filter(d => d.available);
     if (available.length === 0) {
-      container.innerHTML = '<p class="text-muted">No drinks available right now.</p>';
+      container.innerHTML = '<p class="text-muted">Noch keine Getränke im Menü – die Bar kann sie im Bar-Modus eintragen.</p>';
       return;
     }
 
@@ -270,96 +423,37 @@
         selectedDrink = { drinkId: el.dataset.id, name: el.dataset.name, isFreeText: false };
         container.querySelectorAll('.drink-option').forEach(o => o.classList.remove('selected'));
         el.classList.add('selected');
-        updateSelectedPreview();
-        updateSubmitButton();
+        updateSelectionHint();
+        updateAddToCartButton();
       });
     });
   }
 
-  async function loadEditDrinks() {
-    try {
-      const res = await fetch('/api/drinks');
-      const { drinks } = await res.json();
-      renderEditDrinks(drinks || []);
-    } catch { }
-  }
-
-  function renderEditDrinks(drinks) {
-    const container = document.getElementById('edit-drink-list');
-    if (drinks.length === 0) {
-      container.innerHTML = '<p class="text-muted">Noch keine Getränke im Menü.</p>';
-      return;
-    }
-    const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([v, l]) =>
-      `<option value="${v}">${l}</option>`
-    ).join('');
-    container.innerHTML = drinks.map(d => `
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--color-border);">
-        <span style="flex:1;font-weight:500;">${escapeHtml(d.name)}</span>
-        <select class="select drink-cat-edit" data-id="${escapeHtml(d.id)}" style="width:auto;">
-          ${CATEGORY_OPTIONS.replace(`value="${escapeHtml(d.category)}"`, `value="${escapeHtml(d.category)}" selected`)}
-        </select>
-      </div>
-    `).join('');
-    container.querySelectorAll('.drink-cat-edit').forEach(sel => {
-      sel.addEventListener('change', async () => {
-        await fetch(`/api/drinks/${sel.dataset.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: sel.value }),
-        });
-      });
-    });
-  }
-
-  // Tab switching
+  // Tab switching: nur Menü (Bar) oder freie Bestellung
   document.getElementById('order-tabs').addEventListener('click', (e) => {
     const btn = e.target.closest('.tab');
     if (!btn) return;
     const tab = btn.dataset.tab;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#order-tabs .tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
-    activeTab = tab;
-    ['tab-menu', 'tab-add-drink', 'tab-free-text', 'tab-edit-drink'].forEach(id => {
-      document.getElementById(id).classList.add('hidden');
-    });
-    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    document.getElementById('tab-menu').classList.toggle('hidden', tab !== 'menu');
+    document.getElementById('tab-free-text').classList.toggle('hidden', tab !== 'free-text');
 
-    if (tab !== 'menu') {
+    if (tab === 'menu') {
+      document.getElementById('free-text-input').value = '';
       selectedDrink = null;
-      updateSelectedPreview();
-      updateSubmitButton();
+      document.querySelectorAll('.drink-option.selected').forEach(o => o.classList.remove('selected'));
+      updateSelectionHint();
+      updateAddToCartButton();
+    } else if (tab === 'free-text') {
+      document.querySelectorAll('.drink-option.selected').forEach(o => o.classList.remove('selected'));
+      const input = document.getElementById('free-text-input');
+      input.focus();
+      const val = input.value.trim();
+      selectedDrink = val ? { name: val, isFreeText: true } : null;
+      updateSelectionHint();
+      updateAddToCartButton();
     }
-    if (tab === 'free-text') {
-      document.getElementById('free-text-input').focus();
-    }
-    if (tab === 'edit-drink') {
-      loadEditDrinks();
-    }
-  });
-
-  // Add drink to menu
-  document.getElementById('btn-add-drink').addEventListener('click', async () => {
-    const name = document.getElementById('new-drink-name').value.trim();
-    const category = document.getElementById('new-drink-category').value;
-    if (!name) { document.getElementById('new-drink-name').focus(); return; }
-    try {
-      const res = await fetch('/api/drinks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category }),
-      });
-      const { drink } = await res.json();
-      if (drink) {
-        selectedDrink = { drinkId: drink.id, name: drink.name, isFreeText: false };
-        document.getElementById('new-drink-name').value = '';
-        // Switch to menu tab and reload
-        document.querySelector('.tab[data-tab="menu"]').click();
-        await loadMenu();
-        updateSelectedPreview();
-        updateSubmitButton();
-      }
-    } catch (err) { console.error(err); }
   });
 
   // Free text input
@@ -370,77 +464,108 @@
     } else {
       selectedDrink = null;
     }
-    updateSelectedPreview();
-    updateSubmitButton();
+    updateSelectionHint();
+    updateAddToCartButton();
   });
 
-  // Quantity
-  document.getElementById('qty-minus').addEventListener('click', () => {
-    if (quantity > 1) { quantity--; updateQtyDisplay(); }
+  document.getElementById('line-qty-minus').addEventListener('click', () => {
+    if (lineQty > 1) { lineQty--; updateLineQtyDisplay(); }
   });
-  document.getElementById('qty-plus').addEventListener('click', () => {
-    if (quantity < 9) { quantity++; updateQtyDisplay(); }
+  document.getElementById('line-qty-plus').addEventListener('click', () => {
+    if (lineQty < 99) { lineQty++; updateLineQtyDisplay(); }
   });
 
-  function updateQtyDisplay() {
-    document.getElementById('qty-display').textContent = quantity;
-    document.getElementById('qty-minus').disabled = quantity <= 1;
-    document.getElementById('qty-plus').disabled = quantity >= 9;
-  }
-
-  function updateSelectedPreview() {
-    const el = document.getElementById('selected-drink-preview');
-    if (selectedDrink) {
-      el.textContent = `Selected: ${selectedDrink.name}`;
-    } else {
-      el.textContent = 'No drink selected';
-    }
-  }
-
-  function updateSubmitButton() {
-    const btn = document.getElementById('btn-submit-order');
-    const barClosed = barState.status === 'closed' || barState.status === 'paused';
-    btn.disabled = !selectedDrink || barClosed;
-  }
-
-  // Submit order
-  document.getElementById('btn-submit-order').addEventListener('click', async () => {
-    if (!selectedDrink || !currentUser) return;
+  document.getElementById('btn-add-to-cart').addEventListener('click', async () => {
+    if (!selectedDrink) return;
     if (selectedDrink.isFreeText) {
-      const allowed = await assertFreeTextAllowed(selectedDrink.name);
-      if (!allowed) { alert(FREETEXT_BLOCKED_MSG); return; }
+      const ok = await assertFreeTextAllowed(selectedDrink.name);
+      if (!ok) {
+        alert(FREETEXT_BLOCKED_MSG);
+        return;
+      }
     }
-    const btn = document.getElementById('btn-submit-order');
+    addLineToCart();
+  });
+
+  document.getElementById('cart-panel').addEventListener('click', (e) => {
+    const minus = e.target.closest('.cart-qty-minus');
+    const plus = e.target.closest('.cart-qty-plus');
+    const rem = e.target.closest('.cart-remove');
+    if (minus) {
+      const idx = parseInt(minus.dataset.idx, 10);
+      if (cart[idx] && cart[idx].quantity > 1) cart[idx].quantity--;
+      else if (cart[idx]) cart.splice(idx, 1);
+      renderCart();
+    } else if (plus) {
+      const idx = parseInt(plus.dataset.idx, 10);
+      if (cart[idx]) cart[idx].quantity = Math.min(99, cart[idx].quantity + 1);
+      renderCart();
+    } else if (rem) {
+      const idx = parseInt(rem.dataset.idx, 10);
+      if (!Number.isNaN(idx)) cart.splice(idx, 1);
+      renderCart();
+    }
+  });
+
+  // Warenkorb abschicken (eine Bestellung, mehrere Positionen)
+  document.getElementById('btn-checkout').addEventListener('click', async () => {
+    if (!currentUser || cart.length === 0) return;
+    const btn = document.getElementById('btn-checkout');
     btn.disabled = true;
-    btn.textContent = 'Sending…';
+    const prevText = btn.textContent;
+    btn.textContent = 'Wird gesendet…';
     try {
+      for (const line of cart) {
+        if (line.drink.isFreeText) {
+          const ok = await assertFreeTextAllowed(line.drink.name);
+          if (!ok) {
+            alert(FREETEXT_BLOCKED_MSG);
+            btn.disabled = false;
+            btn.textContent = prevText;
+            updateCheckoutButton();
+            return;
+          }
+        }
+      }
+      const items = cart.map((line) => ({
+        drink: line.drink,
+        quantity: line.quantity,
+      }));
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
           userName: currentUser.name,
-          drink: selectedDrink,
-          quantity,
+          items,
         }),
       });
       if (res.ok) {
         const { order } = await res.json();
-        activeOrders.push({ orderId: order.id, drinkName: selectedDrink.name, status: 'pending', barComment: null });
+        activeOrders.push({
+          orderId: order.id,
+          drinkName: orderSummaryForWidget(order),
+          hasFreeText: orderHasFreeText(order),
+          status: 'pending',
+          barComment: null,
+        });
         waitingOrderId = order.id;
+        clearCart();
         saveActiveOrders();
         updateWidget();
         showWaiting('pending');
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to submit order');
+        alert(err.error || 'Bestellung fehlgeschlagen');
         btn.disabled = false;
-        btn.textContent = 'Order Now';
+        btn.textContent = prevText;
+        updateCheckoutButton();
       }
     } catch (err) {
       console.error(err);
       btn.disabled = false;
-      btn.textContent = 'Order Now';
+      btn.textContent = prevText;
+      updateCheckoutButton();
     }
   });
 
@@ -448,6 +573,7 @@
     currentUser = null;
     waitingOrderId = null;
     clearActiveOrders();
+    clearCart();
     localStorage.removeItem(USER_KEY);
     initUserSelect();
   });
@@ -458,8 +584,7 @@
   });
 
   document.getElementById('btn-order-again').addEventListener('click', () => {
-    // Abgeschlossene/abgelehnte Bestellungen aus dem Widget entfernen
-    activeOrders = activeOrders.filter(o => o.status === 'pending' || o.status === 'accepted');
+    activeOrders = activeOrders.filter((o) => o.status === 'pending' || o.status === 'accepted');
     waitingOrderId = null;
     saveActiveOrders();
     updateWidget();
@@ -479,10 +604,13 @@
     if (activeOrders.length === 0) { widget.classList.add('hidden'); return; }
     document.getElementById('widget-orders').innerHTML = activeOrders.map(o => {
       const cfg = WIDGET_CONFIG[o.status] || WIDGET_CONFIG.pending;
+      const ft = o.hasFreeText
+        ? '<span class="badge-freetext badge-freetext--widget" title="Enthält Freitext">FT</span> '
+        : '';
       return `<div class="widget-order-row widget-row-${o.status}">
         <span class="widget-row-icon">${cfg.icon}</span>
         <div class="widget-text">
-          <span class="widget-drink-name">${escapeHtml(o.drinkName)}</span>
+          <span class="widget-drink-name">${ft}${escapeHtml(o.drinkName)}</span>
           <span class="widget-status-label">${cfg.label}</span>
         </div>
       </div>`;
@@ -596,50 +724,50 @@
 
   // === Socket events ===
   socket.on('guest:order_accepted', ({ orderId, barComment }) => {
-    const o = activeOrders.find(o => o.orderId === orderId);
-    if (!o) return;
-    o.status = 'accepted';
-    o.barComment = barComment || null;
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'accepted';
+    order.barComment = barComment || null;
     saveActiveOrders();
     updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'accepted');
-    notify('🍹 Bestellung angenommen', barComment || `${o.drinkName} wird zubereitet…`);
-    showGuestAlert('accepted', o.drinkName);
+    notify('🍹 Bestellung angenommen', barComment || `${order.drinkName} wird zubereitet…`);
+    showGuestAlert('accepted', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('accepted', barComment);
   });
 
   function scheduleOrderRemoval(orderId) {
     setTimeout(() => {
-      activeOrders = activeOrders.filter(o => o.orderId !== orderId);
+      activeOrders = activeOrders.filter((o) => o.orderId !== orderId);
       saveActiveOrders();
       updateWidget();
     }, 10000);
   }
 
   socket.on('guest:order_rejected', ({ orderId, barComment }) => {
-    const o = activeOrders.find(o => o.orderId === orderId);
-    if (!o) return;
-    o.status = 'rejected';
-    o.barComment = barComment || null;
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'rejected';
+    order.barComment = barComment || null;
     saveActiveOrders();
     updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'rejected');
-    notify('❌ Bestellung abgelehnt', barComment || o.drinkName);
-    showGuestAlert('rejected', o.drinkName);
+    notify('❌ Bestellung abgelehnt', barComment || order.drinkName);
+    showGuestAlert('rejected', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('rejected', barComment);
     scheduleOrderRemoval(orderId);
   });
 
   socket.on('guest:order_completed', ({ orderId }) => {
-    const o = activeOrders.find(o => o.orderId === orderId);
-    if (!o) return;
-    o.status = 'completed';
-    o.barComment = null;
+    const order = activeOrders.find((o) => o.orderId === orderId);
+    if (!order) return;
+    order.status = 'completed';
+    order.barComment = null;
     saveActiveOrders();
     updateWidget();
     triggerFlash(document.getElementById('order-status-widget'), 'completed');
-    notify('🎉 Abholbereit!', `${o.drinkName} – komm an die Bar!`);
-    showGuestAlert('completed', o.drinkName);
+    notify('🎉 Abholbereit!', `${order.drinkName} – komm an die Bar!`);
+    showGuestAlert('completed', order.drinkName);
     if (waitingOrderId === orderId && !views.waiting.classList.contains('hidden')) showWaiting('completed');
     scheduleOrderRemoval(orderId);
   });
@@ -651,10 +779,12 @@
     }
   });
 
-  function restoreActiveOrders() {
-    activeOrders = loadActiveOrders().filter(o => o.status === 'pending' || o.status === 'accepted');
-    saveActiveOrders();
-    updateWidget();
+  try {
+    if (typeof ProfanityCheck !== 'undefined') {
+      await ProfanityCheck.loadWords();
+    }
+  } catch {
+    /* Liste optional; Server prüft immer */
   }
 
   try {
@@ -670,7 +800,9 @@
     currentUser = savedUser;
     socket.emit('client:guest_join', { userId: savedUser.id });
     await initOrderForm();
-    restoreActiveOrders();
+    activeOrders = loadActiveOrders().filter((o) => o.status === 'pending' || o.status === 'accepted');
+    saveActiveOrders();
+    updateWidget();
   } else {
     initUserSelect();
   }

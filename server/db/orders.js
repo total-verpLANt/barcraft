@@ -15,7 +15,37 @@ async function getOrderById(id) {
   return orders.find(o => o.id === id) || null;
 }
 
-async function createOrder({ userId, userName, userAvatar, drink, quantity }) {
+function normalizeLines(items, drink, quantity) {
+  if (items && Array.isArray(items) && items.length > 0) {
+    return items.map((line) => {
+      const name = line.drink && String(line.drink.name || '').trim();
+      if (!name) throw new Error('Invalid drink in order line');
+      return {
+        drink: { ...line.drink, name },
+        quantity: Math.min(99, Math.max(1, parseInt(line.quantity, 10) || 1)),
+      };
+    });
+  }
+  const dn = drink && String(drink.name || '').trim();
+  if (dn) {
+    return [{ drink: { ...drink, name: dn }, quantity: Math.min(99, Math.max(1, parseInt(quantity, 10) || 1)) }];
+  }
+  return null;
+}
+
+async function createOrder({ userId, userName, userAvatar, items, drink, quantity }) {
+  const lines = normalizeLines(items, drink, quantity);
+  if (!lines || lines.length === 0) {
+    throw new Error('No order lines');
+  }
+  if (lines.length > 30) {
+    throw new Error('Too many line items');
+  }
+
+  const totalQty = lines.reduce((s, l) => s + l.quantity, 0);
+  const primaryDrink =
+    lines.length === 1 ? lines[0].drink : { name: `${lines.length} Artikel`, isMulti: true };
+
   const data = await readJson(FILE);
   const orders = data ? data.orders : [];
   const order = {
@@ -23,8 +53,9 @@ async function createOrder({ userId, userName, userAvatar, drink, quantity }) {
     userId,
     userName,
     userAvatar: userAvatar || null,
-    drink,
-    quantity: quantity || 1,
+    items: lines,
+    drink: primaryDrink,
+    quantity: totalQty,
     status: 'pending',
     barComment: null,
     createdAt: new Date().toISOString(),
