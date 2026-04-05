@@ -4,24 +4,45 @@ const webpush = require('web-push');
 const { readJson, writeJson } = require('../db/fileDb');
 
 const FILE = 'push-subscriptions.json';
+const VAPID_FILE = 'vapid-keys.json';
 
-function initWebPush() {
-  const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL } = process.env;
-  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    try {
-      webpush.setVapidDetails(
-        VAPID_EMAIL || 'mailto:admin@barcraft.local',
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY
-      );
-      return true;
-    } catch (err) {
-      console.warn('[push] Invalid VAPID keys, push notifications disabled:', err.message);
-      return false;
-    }
+let vapidPublicKey = null;
+
+async function initWebPush() {
+  const email = 'mailto:admin@barcraft.local';
+
+  let publicKey = null;
+  let privateKey = null;
+
+  // Keys aus data/vapid-keys.json laden
+  const stored = await readJson(VAPID_FILE);
+  if (stored && stored.publicKey && stored.privateKey) {
+    publicKey = stored.publicKey;
+    privateKey = stored.privateKey;
   }
-  console.warn('[push] No VAPID keys configured, push notifications disabled.');
-  return false;
+
+  // Keine Keys vorhanden: neue generieren und speichern
+  if (!publicKey || !privateKey) {
+    const keys = webpush.generateVAPIDKeys();
+    publicKey = keys.publicKey;
+    privateKey = keys.privateKey;
+    await writeJson(VAPID_FILE, { publicKey, privateKey });
+    console.log('[push] VAPID keys generated and saved to data/vapid-keys.json');
+  }
+
+  try {
+    webpush.setVapidDetails(email, publicKey, privateKey);
+    vapidPublicKey = publicKey;
+    return true;
+  } catch (err) {
+    console.warn('[push] Invalid VAPID keys, push notifications disabled:', err.message);
+    vapidPublicKey = null;
+    return false;
+  }
+}
+
+function getVapidPublicKey() {
+  return vapidPublicKey;
 }
 
 async function saveSubscription(userId, subscription) {
@@ -59,4 +80,4 @@ async function sendPushToUser(userId, payload) {
   }
 }
 
-module.exports = { initWebPush, saveSubscription, sendPushToUser };
+module.exports = { initWebPush, getVapidPublicKey, saveSubscription, sendPushToUser };

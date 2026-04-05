@@ -32,7 +32,6 @@ app.use('/api/push', pushRouter);
 // Socket.io
 setupSocketHandlers(io);
 setIo(io, getUserSocketMap());
-initWebPush();
 
 // Closing time checker — every 30 seconds
 setInterval(async () => {
@@ -55,6 +54,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   await initializeDb();
+  await initWebPush();
   server.listen(PORT, () => {
     console.log(`Barcraft running at http://localhost:${PORT}`);
   });

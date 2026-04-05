@@ -2,10 +2,10 @@
 
 const express = require('express');
 const router = express.Router();
-const { saveSubscription } = require('../utils/pushNotifications');
+const { saveSubscription, getVapidPublicKey } = require('../utils/pushNotifications');
 
 router.get('/vapid-public-key', (req, res) => {
-  const key = process.env.VAPID_PUBLIC_KEY;
+  const key = getVapidPublicKey();
   if (!key) return res.status(503).json({ error: 'Push notifications not configured' });
   res.json({ publicKey: key });
 });
