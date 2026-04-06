@@ -49,10 +49,15 @@ npm install --omit=dev
 }
 ```
 
-**`.env`** (optional) – Port anpassen:
+**`.env`** (optional) – Port und CORS konfigurieren:
 ```bash
 cp .env.example .env
 ```
+
+| Variable | Beschreibung | Beispiel |
+|---|---|---|
+| `PORT` | Server-Port (Standard: 3000) | `3000` |
+| `ALLOWED_ORIGINS` | Kommagetrennte Liste erlaubter Origins. Leer lassen in `development` (erlaubt alle). In Production ohne Eintrag werden alle Cross-Origin-Requests blockiert. | `http://192.168.1.42:3000` |
 
 ### Starten
 
