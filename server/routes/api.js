@@ -198,7 +198,7 @@ router.post('/orders', async (req, res) => {
   }
 });
 
-router.get('/orders/:id', async (req, res) => {
+router.get('/orders/:id', requireBarAuth, async (req, res) => {
   try {
     const order = await getOrderById(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
