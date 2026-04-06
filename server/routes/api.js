@@ -208,7 +208,7 @@ router.get('/orders/:id', async (req, res) => {
   }
 });
 
-router.patch('/orders/:id', async (req, res) => {
+router.patch('/orders/:id', requireBarAuth, async (req, res) => {
   const { status, barComment } = req.body;
   const validStatuses = [ORDER_STATUS.ACCEPTED, ORDER_STATUS.REJECTED, ORDER_STATUS.COMPLETED];
   if (!validStatuses.includes(status)) {
@@ -281,7 +281,7 @@ router.get('/bar-state', async (req, res) => {
   }
 });
 
-router.patch('/bar-state', async (req, res) => {
+router.patch('/bar-state', requireBarAuth, async (req, res) => {
   try {
     const current = (await readJson('bar-state.json')) || { status: 'open', closingTime: null, message: '' };
     const { status, closingTime, message } = req.body;
