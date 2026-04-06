@@ -15,8 +15,7 @@ const { sendPushToUser } = require('../utils/pushNotifications');
 const crypto = require('crypto');
 const { containsProfanity } = require('../utils/profanityCheck');
 const { formatOrderSummary } = require('../utils/orderHelpers');
-
-const activeSessions = new Set();
+const { addSession, hasSession } = require('../db/sessions');
 
 let _io = null;
 let _userSocketMap = null;
@@ -44,7 +43,7 @@ function verifyBarToken(req) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) return false;
   const token = auth.slice(7);
-  return activeSessions.has(token);
+  return hasSession(token);
 }
 
 function requireBarAuth(req, res, next) {
@@ -60,7 +59,7 @@ router.post('/auth', (req, res) => {
   if (!password) return res.status(400).json({ error: 'Password required' });
   if (password === config.password) {
     const token = crypto.randomBytes(32).toString('hex');
-    activeSessions.add(token);
+    addSession(token);
     return res.json({ token, barName: config.barName });
   }
   res.status(401).json({ error: 'Invalid password' });
