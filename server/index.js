@@ -1,6 +1,16 @@
 'use strict';
 
 require('dotenv').config();
+
+const rawOrigins = process.env.ALLOWED_ORIGINS;
+const corsOrigin = rawOrigins
+  ? rawOrigins.split(',').map(o => o.trim()).filter(Boolean)
+  : (process.env.NODE_ENV === 'development' ? '*' : false);
+
+if (!rawOrigins && process.env.NODE_ENV !== 'development') {
+  console.warn('[CORS] ALLOWED_ORIGINS not set — all cross-origin requests will be blocked.');
+}
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -18,10 +28,10 @@ const { SOCKET_EVENTS } = require('./utils/constants');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
 });
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
