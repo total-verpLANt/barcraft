@@ -128,7 +128,7 @@ router.delete('/drinks/:id', requireBarAuth, async (req, res) => {
 });
 
 // --- Orders ---
-router.get('/orders', async (req, res) => {
+router.get('/orders', requireBarAuth, async (req, res) => {
   try {
     const orders = await getOrders();
     res.json({ orders });

@@ -138,7 +138,7 @@
   // === Fetch all orders on load ===
   async function loadOrders() {
     try {
-      const res = await fetch('/api/orders');
+      const res = await fetch('/api/orders', { headers: authJsonHeaders() });
       if (!res.ok) return;
       const { orders: allOrders } = await res.json();
       // We only care about recent/active orders
