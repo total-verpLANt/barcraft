@@ -281,7 +281,7 @@
       if (barComment) body.barComment = barComment;
       await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authJsonHeaders(),
         body: JSON.stringify(body),
       });
     } catch (err) { console.error(err); }
@@ -363,7 +363,7 @@
     try {
       const res = await fetch('/api/bar-state', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authJsonHeaders(),
         body: JSON.stringify({ status, ...extra }),
       });
       const state = await res.json();
@@ -381,7 +381,7 @@
     try {
       await fetch('/api/bar-state', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authJsonHeaders(),
         body: JSON.stringify({ closingTime: time }),
       });
     } catch (err) { console.error(err); }
