@@ -6,7 +6,8 @@
 
   function getSocket() {
     if (!_socket) {
-      _socket = io({ transports: ['websocket', 'polling'] });
+      const token = window.Auth?.getToken?.() || null;
+      _socket = io({ transports: ['websocket', 'polling'], auth: { token } });
     }
     return _socket;
   }

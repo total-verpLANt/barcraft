@@ -2,6 +2,7 @@
 
 const { SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { updateUser } = require('../db/users');
+const { hasSession } = require('../db/sessions');
 
 // userId → socketId map
 const userSocketMap = new Map();
@@ -21,6 +22,11 @@ function setupSocketHandlers(io) {
     });
 
     socket.on(SOCKET_EVENTS.BAR_JOIN, () => {
+      const token = socket.handshake.auth?.token;
+      if (!token || !hasSession(token)) {
+        socket.emit('error', { message: 'Unauthorized' });
+        return;
+      }
       socket.join(ROOMS.BAR);
     });
 
