@@ -2,13 +2,14 @@
 
 require('dotenv').config();
 
-const rawOrigins = process.env.ALLOWED_ORIGINS;
-const corsOrigin = rawOrigins
-  ? rawOrigins.split(',').map(o => o.trim()).filter(Boolean)
+const parsedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+const corsOrigin = parsedOrigins.length > 0
+  ? parsedOrigins
   : (process.env.NODE_ENV === 'development' ? '*' : false);
 
-if (!rawOrigins && process.env.NODE_ENV !== 'development') {
-  console.warn('[CORS] ALLOWED_ORIGINS not set — all cross-origin requests will be blocked.');
+if (parsedOrigins.length === 0 && process.env.NODE_ENV !== 'development') {
+  console.warn('[CORS] ALLOWED_ORIGINS not set or empty — all cross-origin requests will be blocked.');
 }
 
 const express = require('express');
