@@ -25,6 +25,7 @@ function setupSocketHandlers(io) {
       const token = socket.handshake.auth?.token;
       if (!token || !hasSession(token)) {
         socket.emit('error', { message: 'Unauthorized' });
+        socket.disconnect(true);
         return;
       }
       socket.join(ROOMS.BAR);
