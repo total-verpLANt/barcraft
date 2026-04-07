@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { readJson, writeJson } = require('./fileDb');
 const { generateId } = require('../utils/idGenerator');
 
@@ -18,9 +19,11 @@ async function getUserById(id) {
 async function createUser({ name }) {
   const data = await readJson(FILE);
   const users = data ? data.users : [];
+  const guestToken = crypto.randomBytes(32).toString('hex');
   const user = {
     id: generateId('usr'),
     name,
+    guestToken,
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
     orderCount: 0,

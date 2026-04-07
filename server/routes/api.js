@@ -80,7 +80,7 @@ router.post('/users', async (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
   try {
     const user = await createUser({ name: name.trim() });
-    res.status(201).json({ user });
+    res.status(201).json({ user, guestToken: user.guestToken });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
