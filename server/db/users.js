@@ -6,14 +6,21 @@ const { generateId } = require('../utils/idGenerator');
 
 const FILE = 'users.json';
 
+function stripToken(user) {
+  const { guestToken: _, ...safe } = user;
+  return safe;
+}
+
 async function getUsers() {
   const data = await readJson(FILE);
-  return data ? data.users : [];
+  return data ? data.users.map(stripToken) : [];
 }
 
 async function getUserById(id) {
-  const users = await getUsers();
-  return users.find(u => u.id === id) || null;
+  const data = await readJson(FILE);
+  const users = data ? data.users : [];
+  const user = users.find(u => u.id === id) || null;
+  return user ? stripToken(user) : null;
 }
 
 async function createUser({ name }) {
