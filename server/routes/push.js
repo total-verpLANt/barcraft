@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const { saveSubscription, getVapidPublicKey } = require('../utils/pushNotifications');
+const { requireGuestAuth } = require('../middleware/guestAuth');
 
 router.get('/vapid-public-key', (req, res) => {
   const key = getVapidPublicKey();
@@ -10,7 +11,7 @@ router.get('/vapid-public-key', (req, res) => {
   res.json({ publicKey: key });
 });
 
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', requireGuestAuth, async (req, res) => {
   const { userId, subscription } = req.body;
   if (!userId || !subscription) {
     return res.status(400).json({ error: 'userId and subscription required' });

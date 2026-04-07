@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const { containsProfanity } = require('../utils/profanityCheck');
 const { formatOrderSummary } = require('../utils/orderHelpers');
 const { addSession, hasSession } = require('../db/sessions');
+const { requireGuestAuth } = require('../middleware/guestAuth');
 
 let _io = null;
 let _userSocketMap = null;
@@ -137,7 +138,7 @@ router.get('/orders', requireBarAuth, async (req, res) => {
   }
 });
 
-router.patch('/users/:id/avatar', async (req, res) => {
+router.patch('/users/:id/avatar', requireGuestAuth, async (req, res) => {
   const { avatarDataUrl } = req.body;
   if (!avatarDataUrl) return res.status(400).json({ error: 'avatarDataUrl required' });
   if (!avatarDataUrl.startsWith('data:image/')) return res.status(400).json({ error: 'Invalid image data' });
@@ -150,7 +151,7 @@ router.patch('/users/:id/avatar', async (req, res) => {
   }
 });
 
-router.post('/orders', async (req, res) => {
+router.post('/orders', requireGuestAuth, async (req, res) => {
   const { userId, userName, items, drink, quantity } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const hasItems = items && Array.isArray(items) && items.length > 0;
