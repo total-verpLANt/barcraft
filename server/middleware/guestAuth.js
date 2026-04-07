@@ -15,7 +15,7 @@ const { getUserById } = require('../db/users');
  */
 async function requireGuestAuth(req, res, next) {
   const token = req.headers['x-guest-token'];
-  const userId = req.body?.userId || req.params?.id;
+  const userId = req.params?.id || req.body?.userId;
   if (!token || !userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
