@@ -1,7 +1,7 @@
 'use strict';
 
 const { SOCKET_EVENTS, ROOMS } = require('../utils/constants');
-const { updateUser, getUserById } = require('../db/users');
+const { updateUser, getUserByIdFull } = require('../db/users');
 const { hasSession } = require('../db/sessions');
 
 // userId → socketId map
@@ -18,7 +18,7 @@ function setupSocketHandlers(io) {
         socket.disconnect(true);
         return;
       }
-      const user = await getUserById(userId);
+      const user = await getUserByIdFull(userId);
       if (!user || user.guestToken !== guestToken) {
         socket.disconnect(true);
         return;

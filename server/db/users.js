@@ -23,6 +23,13 @@ async function getUserById(id) {
   return user ? stripToken(user) : null;
 }
 
+// Internal: returns full user record including guestToken — only for auth middleware
+async function getUserByIdFull(id) {
+  const data = await readJson(FILE);
+  const users = data ? data.users : [];
+  return users.find(u => u.id === id) || null;
+}
+
 async function createUser({ name }) {
   const data = await readJson(FILE);
   const users = data ? data.users : [];
@@ -62,4 +69,4 @@ async function incrementUserOrderCount(userId) {
   }
 }
 
-module.exports = { getUsers, getUserById, createUser, updateUser, incrementUserOrderCount };
+module.exports = { getUsers, getUserById, getUserByIdFull, createUser, updateUser, incrementUserOrderCount };

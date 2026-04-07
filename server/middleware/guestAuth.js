@@ -1,6 +1,6 @@
 'use strict';
 
-const { getUserById } = require('../db/users');
+const { getUserByIdFull } = require('../db/users');
 
 /**
  * Middleware: validates that the request carries a valid guest session token.
@@ -20,7 +20,7 @@ async function requireGuestAuth(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   try {
-    const user = await getUserById(userId);
+    const user = await getUserByIdFull(userId);
     if (!user || user.guestToken !== token) {
       return res.status(403).json({ error: 'Forbidden' });
     }
