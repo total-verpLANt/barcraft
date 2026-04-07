@@ -20,6 +20,7 @@ const path = require('path');
 
 const { initializeDb } = require('./db/fileDb');
 const { readJson, writeJson } = require('./db/fileDb');
+const { migrateGuestTokens } = require('./db/migrateGuestTokens');
 const { router: apiRouter, setIo } = require('./routes/api');
 const pushRouter = require('./routes/push');
 const { setupSocketHandlers, getUserSocketMap } = require('./socket/handlers');
@@ -65,6 +66,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   await initializeDb();
+  await migrateGuestTokens();
   await initWebPush();
   server.listen(PORT, () => {
     console.log(`Barcraft running at http://localhost:${PORT}`);
