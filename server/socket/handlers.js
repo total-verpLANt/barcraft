@@ -1,7 +1,7 @@
 'use strict';
 
 const { SOCKET_EVENTS, ROOMS } = require('../utils/constants');
-const { updateUser } = require('../db/users');
+const { updateUser, getUserById } = require('../db/users');
 const { hasSession } = require('../db/sessions');
 
 // userId → socketId map
@@ -13,8 +13,16 @@ function getUserSocketMap() {
 
 function setupSocketHandlers(io) {
   io.on('connection', (socket) => {
-    socket.on(SOCKET_EVENTS.GUEST_JOIN, async ({ userId }) => {
-      if (!userId) return;
+    socket.on(SOCKET_EVENTS.GUEST_JOIN, async ({ userId, guestToken }) => {
+      if (!userId || !guestToken) {
+        socket.disconnect(true);
+        return;
+      }
+      const user = await getUserById(userId);
+      if (!user || user.guestToken !== guestToken) {
+        socket.disconnect(true);
+        return;
+      }
       userSocketMap.set(userId, socket.id);
       socket.userId = userId;
       // Update user's socketId in DB
