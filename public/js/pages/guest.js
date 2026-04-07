@@ -256,8 +256,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       });
-      const { user } = await res.json();
-      if (user) selectUser(user);
+      const { user, guestToken } = await res.json();
+      if (user) selectUser({ ...user, guestToken });
     } catch (err) {
       console.error(err);
     }
@@ -270,7 +270,7 @@
   function selectUser(user) {
     currentUser = user;
     saveUser(user);
-    socket.emit('client:guest_join', { userId: user.id });
+    socket.emit('client:guest_join', { userId: user.id, guestToken: user.guestToken });
     initOrderForm();
   }
 
@@ -319,7 +319,7 @@
     showAvatarPreview(dataUrl);
     await fetch(`/api/users/${currentUser.id}/avatar`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Guest-Token': currentUser.guestToken || '' },
       body: JSON.stringify({ avatarDataUrl: dataUrl }),
     });
     currentUser.avatarDataUrl = dataUrl;
@@ -525,7 +525,7 @@
       }));
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Guest-Token': currentUser.guestToken || '' },
         body: JSON.stringify({
           userId: currentUser.id,
           userName: currentUser.name,
@@ -704,7 +704,7 @@
     btn.textContent = '…';
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      await PushClient.registerPushSubscription(currentUser.id);
+      await PushClient.registerPushSubscription(currentUser.id, currentUser.guestToken);
       document.getElementById('push-banner').classList.add('hidden');
     } else if (permission === 'denied') {
       document.getElementById('push-banner-text').textContent = 'Notifications blockiert – in den Browser-Einstellungen erlauben.';
@@ -783,7 +783,7 @@
   const savedUser = loadUser();
   if (savedUser) {
     currentUser = savedUser;
-    socket.emit('client:guest_join', { userId: savedUser.id });
+    socket.emit('client:guest_join', { userId: savedUser.id, guestToken: savedUser.guestToken });
     await initOrderForm();
     activeOrders = loadActiveOrders().filter((o) => o.status === 'pending' || o.status === 'accepted');
     saveActiveOrders();
