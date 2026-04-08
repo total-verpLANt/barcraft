@@ -81,7 +81,13 @@ router.post('/users', async (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name required' });
   try {
     const user = await createUser({ name: name.trim() });
-    res.status(201).json({ user: { ...user, guestToken: undefined }, guestToken: user.guestToken });
+    res.cookie('guestToken', user.guestToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+    res.status(201).json({ user: { ...user, guestToken: undefined } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

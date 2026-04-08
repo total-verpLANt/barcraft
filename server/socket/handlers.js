@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const cookie = require('cookie');
 const { SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { updateUser, getUserByIdFull } = require('../db/users');
 const { hasSession } = require('../db/sessions');
@@ -14,7 +15,9 @@ function getUserSocketMap() {
 
 function setupSocketHandlers(io) {
   io.on('connection', (socket) => {
-    socket.on(SOCKET_EVENTS.GUEST_JOIN, async ({ userId, guestToken }) => {
+    socket.on(SOCKET_EVENTS.GUEST_JOIN, async ({ userId }) => {
+      const cookies = cookie.parse(socket.handshake.headers.cookie || '');
+      const guestToken = cookies.guestToken;
       if (!userId || !guestToken) {
         socket.disconnect(true);
         return;
