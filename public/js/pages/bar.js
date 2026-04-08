@@ -366,6 +366,11 @@
         headers: authJsonHeaders(),
         body: JSON.stringify({ status, ...extra }),
       });
+      if (!res.ok) {
+        if (res.status === 401) { Auth.clearToken(); location.reload(); }
+        console.error('setBarState failed:', res.status);
+        return;
+      }
       const state = await res.json();
       updateBarStateBadge(state);
     } catch (err) { console.error(err); }
@@ -379,11 +384,15 @@
     const time = document.getElementById('closing-time-input').value;
     if (!time) return;
     try {
-      await fetch('/api/bar-state', {
+      const res = await fetch('/api/bar-state', {
         method: 'PATCH',
         headers: authJsonHeaders(),
         body: JSON.stringify({ closingTime: time }),
       });
+      if (!res.ok) {
+        if (res.status === 401) { Auth.clearToken(); location.reload(); }
+        console.error('setClosingTime failed:', res.status);
+      }
     } catch (err) { console.error(err); }
   });
 
