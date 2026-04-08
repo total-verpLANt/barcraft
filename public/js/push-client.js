@@ -1,6 +1,6 @@
 'use strict';
 
-async function registerPushSubscription(userId, guestToken) {
+async function registerPushSubscription(userId) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
   try {
@@ -21,7 +21,7 @@ async function registerPushSubscription(userId, guestToken) {
 
     await fetch('/api/push/subscribe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Guest-Token': guestToken || '' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, subscription: sub }),
     });
     return true;
