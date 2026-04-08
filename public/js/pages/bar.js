@@ -423,7 +423,7 @@
   });
 
   socket.on('error', (err) => {
-    if (err && err.message === 'Unauthorized') { Auth.clearToken(); location.reload(); }
+    if (err && err.message === 'Unauthorized' && Auth.getToken()) { Auth.clearToken(); location.reload(); }
   });
 
   init();
