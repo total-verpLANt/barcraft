@@ -141,7 +141,19 @@ router.get('/orders', requireBarAuth, async (req, res) => {
 router.patch('/users/:id/avatar', requireGuestAuth, async (req, res) => {
   const { avatarDataUrl } = req.body;
   if (!avatarDataUrl) return res.status(400).json({ error: 'avatarDataUrl required' });
-  if (!avatarDataUrl.startsWith('data:image/')) return res.status(400).json({ error: 'Invalid image data' });
+  const ALLOWED_AVATAR_PREFIXES = [
+    'data:image/jpeg;base64,',
+    'data:image/png;base64,',
+    'data:image/webp;base64,',
+    'data:image/gif;base64,',
+  ];
+  if (!ALLOWED_AVATAR_PREFIXES.some(p => avatarDataUrl.startsWith(p))) {
+    return res.status(400).json({ error: 'Unsupported image format. Allowed: jpeg, png, webp, gif' });
+  }
+  const MAX_AVATAR_B64 = 350_000; // ~256 KB decoded
+  if (avatarDataUrl.length > MAX_AVATAR_B64) {
+    return res.status(413).json({ error: 'Avatar too large (max ~256 KB)' });
+  }
   try {
     const user = await updateUser(req.params.id, { avatarDataUrl });
     if (!user) return res.status(404).json({ error: 'User not found' });
