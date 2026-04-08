@@ -6,7 +6,7 @@ Project overview, tech stack, and file structure live in the [README](README.md)
 
 - **JavaScript:** `'use strict';` at top of server files; client page scripts often wrap in an IIFE. **CommonJS** on the server (`require` / `module.exports`).
 - **API & sockets:** Keep request bodies and socket payloads consistent with existing patterns; extend `constants.js` instead of scattering magic strings.
-- **Auth:** Bar/guest/leaderboard flows use a shared password and `sessionStorage` token via `public/js/auth.js` — don't invent a second auth model without a maintainer decision.
+- **Auth:** Bar/guest/leaderboard flows use a shared password and `sessionStorage` token via `public/js/auth.js` — don't invent a second auth model without a maintainer decision. Guest requests are authenticated via a server-set httpOnly cookie (`guestToken`), not a request header or localStorage value.
 - **UI copy:** User-facing strings are often **German**; keep tone consistent with surrounding text.
 - **CSS / HTML hygiene:** Use utilities in `components.css` for repeated layout (avoid large inline styles). For form controls that need a label for accessibility, use a visually hidden label pattern (e.g. `.sr-only`) and stable `id`s where scripts depend on them.
 - **Security:** Treat all client input as untrusted — validate and sanitize on the server. Check that bar-only endpoints require bar auth; don't rely on client-side guards alone. Watch for injection (SQL, HTML, shell), XSS, and missing authorization on new or changed routes.
