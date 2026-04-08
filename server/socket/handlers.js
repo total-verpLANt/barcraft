@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { SOCKET_EVENTS, ROOMS } = require('../utils/constants');
 const { updateUser, getUserByIdFull } = require('../db/users');
 const { hasSession } = require('../db/sessions');
@@ -19,7 +20,10 @@ function setupSocketHandlers(io) {
         return;
       }
       const user = await getUserByIdFull(userId);
-      if (!user || user.guestToken !== guestToken) {
+      const tokenMatch = user && typeof guestToken === 'string' &&
+        guestToken.length === user.guestToken.length &&
+        crypto.timingSafeEqual(Buffer.from(user.guestToken, 'utf8'), Buffer.from(guestToken, 'utf8'));
+      if (!tokenMatch) {
         socket.disconnect(true);
         return;
       }

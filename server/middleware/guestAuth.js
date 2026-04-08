@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { getUserByIdFull } = require('../db/users');
 
 /**
@@ -21,7 +22,10 @@ async function requireGuestAuth(req, res, next) {
   }
   try {
     const user = await getUserByIdFull(userId);
-    if (!user || user.guestToken !== token) {
+    const tokenMatch = user && typeof token === 'string' &&
+      token.length === user.guestToken.length &&
+      crypto.timingSafeEqual(Buffer.from(user.guestToken, 'utf8'), Buffer.from(token, 'utf8'));
+    if (!tokenMatch) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     next();
