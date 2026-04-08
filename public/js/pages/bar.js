@@ -422,5 +422,9 @@
     updateBarStateBadge(state);
   });
 
+  socket.on('error', (err) => {
+    if (err && err.message === 'Unauthorized') { Auth.clearToken(); location.reload(); }
+  });
+
   init();
 })();
