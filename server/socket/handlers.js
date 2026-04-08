@@ -16,24 +16,28 @@ function getUserSocketMap() {
 function setupSocketHandlers(io) {
   io.on('connection', (socket) => {
     socket.on(SOCKET_EVENTS.GUEST_JOIN, async ({ userId }) => {
-      const cookies = cookie.parse(socket.handshake.headers.cookie || '');
-      const guestToken = cookies.guestToken;
-      if (!userId || !guestToken) {
+      try {
+        const cookies = cookie.parse(socket.handshake.headers.cookie || '');
+        const guestToken = cookies.guestToken;
+        if (!userId || !guestToken) {
+          socket.disconnect(true);
+          return;
+        }
+        const user = await getUserByIdFull(userId);
+        const tokenMatch = user && user.guestToken && typeof guestToken === 'string' &&
+          guestToken.length === user.guestToken.length &&
+          crypto.timingSafeEqual(Buffer.from(user.guestToken, 'utf8'), Buffer.from(guestToken, 'utf8'));
+        if (!tokenMatch) {
+          socket.disconnect(true);
+          return;
+        }
+        userSocketMap.set(userId, socket.id);
+        socket.userId = userId;
+        // Update user's socketId in DB
+        await updateUser(userId, { socketId: socket.id, lastActiveAt: new Date().toISOString() });
+      } catch (err) {
         socket.disconnect(true);
-        return;
       }
-      const user = await getUserByIdFull(userId);
-      const tokenMatch = user && typeof guestToken === 'string' &&
-        guestToken.length === user.guestToken.length &&
-        crypto.timingSafeEqual(Buffer.from(user.guestToken, 'utf8'), Buffer.from(guestToken, 'utf8'));
-      if (!tokenMatch) {
-        socket.disconnect(true);
-        return;
-      }
-      userSocketMap.set(userId, socket.id);
-      socket.userId = userId;
-      // Update user's socketId in DB
-      await updateUser(userId, { socketId: socket.id, lastActiveAt: new Date().toISOString() });
     });
 
     socket.on(SOCKET_EVENTS.BAR_JOIN, () => {

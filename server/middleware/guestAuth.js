@@ -24,7 +24,7 @@ async function requireGuestAuth(req, res, next) {
   }
   try {
     const user = await getUserByIdFull(userId);
-    const tokenMatch = user && typeof token === 'string' &&
+    const tokenMatch = user && user.guestToken && typeof token === 'string' &&
       token.length === user.guestToken.length &&
       crypto.timingSafeEqual(Buffer.from(user.guestToken, 'utf8'), Buffer.from(token, 'utf8'));
     if (!tokenMatch) {
