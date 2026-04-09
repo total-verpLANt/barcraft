@@ -240,9 +240,11 @@
   }
 
   async function fetchUsers() {
+    const token = window.Auth?.getToken?.();
+    if (!token) return [];
     try {
       const res = await fetch('/api/users', {
-        headers: { 'Authorization': `Bearer ${window.Auth.getToken()}` },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       const { users } = await res.json();
       return users || [];
@@ -803,5 +805,17 @@
     updateWidget();
   } else {
     initUserSelect();
+  }
+
+  // Re-fetch user list once auth overlay is dismissed (GET /api/users requires site auth)
+  const authOverlay = document.getElementById('password-overlay');
+  if (authOverlay) {
+    const observer = new MutationObserver(() => {
+      if (authOverlay.classList.contains('hidden') && !currentUser) {
+        initUserSelect();
+        observer.disconnect();
+      }
+    });
+    observer.observe(authOverlay, { attributes: true, attributeFilter: ['class'] });
   }
 })();
