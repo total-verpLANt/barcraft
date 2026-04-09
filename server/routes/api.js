@@ -100,6 +100,11 @@ router.post('/users', async (req, res) => {
   }
 });
 
+router.post('/logout', (req, res) => {
+  res.clearCookie('guestToken', { httpOnly: true, sameSite: 'strict' });
+  res.json({ ok: true });
+});
+
 // --- Drinks ---
 router.get('/drinks', async (req, res) => {
   try {

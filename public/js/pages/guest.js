@@ -564,7 +564,9 @@
     }
   });
 
-  document.getElementById('btn-switch-user').addEventListener('click', () => {
+  document.getElementById('btn-switch-user').addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    socket.disconnect();
     currentUser = null;
     waitingOrderId = null;
     clearActiveOrders();
