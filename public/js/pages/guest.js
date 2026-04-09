@@ -775,6 +775,14 @@
     }
   });
 
+  socket.on('disconnect', (reason) => {
+    if (currentUser && reason !== 'io client disconnect') {
+      currentUser = null;
+      localStorage.removeItem(USER_KEY);
+      showView('userSelect');
+    }
+  });
+
   try {
     if (typeof ProfanityCheck !== 'undefined') {
       await ProfanityCheck.loadWords();
