@@ -241,7 +241,9 @@
 
   async function fetchUsers() {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/users', {
+        headers: { 'Authorization': `Bearer ${window.Auth.getToken()}` },
+      });
       const { users } = await res.json();
       return users || [];
     } catch { return []; }

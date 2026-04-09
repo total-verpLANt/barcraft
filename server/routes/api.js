@@ -54,6 +54,13 @@ function requireBarAuth(req, res, next) {
   next();
 }
 
+function requireSiteAuth(req, res, next) {
+  if (!verifyBarToken(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // --- Auth ---
 router.post('/auth', (req, res) => {
   const { password } = req.body;
@@ -67,7 +74,7 @@ router.post('/auth', (req, res) => {
 });
 
 // --- Users ---
-router.get('/users', async (req, res) => {
+router.get('/users', requireSiteAuth, async (req, res) => {
   try {
     const users = await getUsers();
     res.json({ users });
@@ -170,7 +177,7 @@ router.patch('/users/:id/avatar', requireGuestAuth, async (req, res) => {
 });
 
 router.post('/orders', requireGuestAuth, async (req, res) => {
-  const { userId, userName, items, drink, quantity } = req.body;
+  const { userId, items, drink, quantity } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const hasItems = items && Array.isArray(items) && items.length > 0;
   if (!hasItems && !drink) return res.status(400).json({ error: 'items or drink required' });
@@ -195,7 +202,7 @@ router.post('/orders', requireGuestAuth, async (req, res) => {
 
     const user = await getUserById(userId);
     const userAvatar = user?.avatarDataUrl || null;
-    const order = await createOrder({ userId, userName, userAvatar, items, drink, quantity });
+    const order = await createOrder({ userId, userName: user.name, userAvatar, items, drink, quantity });
 
     // Increment counters
     for (const line of order.items) {
