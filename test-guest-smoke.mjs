@@ -15,7 +15,10 @@ async function runTests() {
     test2_create_user: { passed: false, error: null, screenshot: null },
     test3_check_storage: { passed: false, error: null, token: null },
     test4_order_attempt: { passed: false, error: null, screenshot: null },
-    test5_no_401: { passed: false, error: null, requests: [] }
+    test5_no_401: { passed: false, error: null, requests: [] },
+    test6_no_cookie_401: { passed: false, error: null },
+    test7_wrong_token_403: { passed: false, error: null },
+    test8_foreign_userid_403: { passed: false, error: null },
   };
 
   // Collect requests for 401 check
@@ -156,6 +159,90 @@ async function runTests() {
       console.log(`❌ TEST 5: Detected ${requests.length} 401 error(s)`);
     }
 
+    // Test 6: No cookie → 401
+    console.log('TEST 6: POST /api/orders without cookie should return 401...');
+    try {
+      const res6 = await fetch(`${BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 'any', items: [{ drink: { drinkId: 'x', name: 'x' }, quantity: 1 }] }),
+      });
+      results.test6_no_cookie_401.passed = res6.status === 401;
+      if (results.test6_no_cookie_401.passed) {
+        console.log('✅ TEST 6: Returned 401 without cookie');
+      } else {
+        results.test6_no_cookie_401.error = `Expected 401, got ${res6.status}`;
+        console.log(`❌ TEST 6: ${results.test6_no_cookie_401.error}`);
+      }
+    } catch (err) {
+      results.test6_no_cookie_401.error = err.message;
+      console.log(`❌ TEST 6: ${err.message}`);
+    }
+
+    // Test 7: Wrong token → 403
+    console.log('TEST 7: POST /api/orders with wrong guestToken should return 403...');
+    try {
+      const res7 = await fetch(`${BASE_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': 'guestToken=wrongtokenwrongtokenwrongtokenwrongtokenwrongtoken',
+        },
+        body: JSON.stringify({ userId: 'nonexistent-user-id', items: [{ drink: { drinkId: 'x', name: 'x' }, quantity: 1 }] }),
+      });
+      results.test7_wrong_token_403.passed = res7.status === 403;
+      if (results.test7_wrong_token_403.passed) {
+        console.log('✅ TEST 7: Returned 403 with wrong token');
+      } else {
+        results.test7_wrong_token_403.error = `Expected 403, got ${res7.status}`;
+        console.log(`❌ TEST 7: ${results.test7_wrong_token_403.error}`);
+      }
+    } catch (err) {
+      results.test7_wrong_token_403.error = err.message;
+      console.log(`❌ TEST 7: ${err.message}`);
+    }
+
+    // Test 8: Valid own cookie + foreign userId → 403
+    console.log('TEST 8: POST /api/orders with valid token but foreign userId should return 403...');
+    try {
+      // Get the real guestToken from the browser context (set by test2)
+      const browserCookies = await context.cookies(BASE_URL);
+      const guestCookie = browserCookies.find(c => c.name === 'guestToken');
+
+      // Create a second user to get a foreign userId
+      const secondUserRes = await fetch(`${BASE_URL}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'NegativTestUser_B' }),
+      });
+      const { user: userB } = await secondUserRes.json();
+
+      if (!guestCookie || !userB?.id) {
+        results.test8_foreign_userid_403.error = 'Could not get cookie or create second user';
+        console.log(`❌ TEST 8: ${results.test8_foreign_userid_403.error}`);
+      } else {
+        // Use our own cookie (user A's token) with user B's ID → must be rejected
+        const res8 = await fetch(`${BASE_URL}/api/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': `guestToken=${guestCookie.value}`,
+          },
+          body: JSON.stringify({ userId: userB.id, items: [{ drink: { drinkId: 'x', name: 'x' }, quantity: 1 }] }),
+        });
+        results.test8_foreign_userid_403.passed = res8.status === 403;
+        if (results.test8_foreign_userid_403.passed) {
+          console.log('✅ TEST 8: Returned 403 for foreign userId with own token');
+        } else {
+          results.test8_foreign_userid_403.error = `Expected 403, got ${res8.status}`;
+          console.log(`❌ TEST 8: ${results.test8_foreign_userid_403.error}`);
+        }
+      }
+    } catch (err) {
+      results.test8_foreign_userid_403.error = err.message;
+      console.log(`❌ TEST 8: ${err.message}`);
+    }
+
     // Print summary
     console.log('\n' + '='.repeat(60));
     console.log('TEST SUMMARY');
@@ -173,7 +260,7 @@ async function runTests() {
       if (result.passed) passCount++;
     }
     console.log('='.repeat(60));
-    console.log(`TOTAL: ${passCount}/6 tests passed\n`);
+    console.log(`TOTAL: ${passCount}/9 tests passed\n`);
 
   } catch (error) {
     console.error('❌ Test execution error:', error.message);
